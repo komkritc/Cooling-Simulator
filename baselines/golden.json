@@ -1,0 +1,203 @@
+{
+ "data_root": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm",
+ "rates": {
+  "200": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.782, P_rev = 0.001; rmse vs VAMPIRE mean over 800-300 K = 0.0118",
+    "200 K/ns, 25 seeds: up 25, reversed 0, partly ordered 0; mean final Mz = +0.7878 +- 0.0005; mean |m| at 300 K = 0.790; P_down = 0.000",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.015 +- 0.014 | +0.009 | 3.242e+12",
+    " 700 | +0.027 +- 0.017 | +0.019 | 1.650e+12",
+    " 680 | +0.042 +- 0.019 | +0.029 | 4.706e+11",
+    " 660 | +0.068 +- 0.032 | +0.059 | 1.894e+11",
+    " 640 | +0.138 +- 0.038 | +0.159 | 3.681e+10",
+    " 620 | +0.260 +- 0.019 | +0.264 | 1.296e+10",
+    " 600 | +0.333 +- 0.014 | +0.337 | 1.456e+08",
+    " 550 | +0.473 +- 0.009 | +0.462 | 5.742e+02",
+    " 500 | +0.563 +- 0.007 | +0.551 | 1.285e-04",
+    " 400 | +0.696 +- 0.004 | +0.683 | 2.443e-17",
+    " 305 | +0.788 +- 0.003 | +0.777 | 4.009e-18"
+   ],
+   "m300": 0.782,
+   "p_rev": 0.001,
+   "rmse": 0.0118,
+   "n_seeds": 25,
+   "up": 25,
+   "down": 0,
+   "partial": 0,
+   "mean_final": 0.7878,
+   "sem_final": 0.0005,
+   "m_300_abs": 0.79,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_200/mz_200.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_200Kns"
+  },
+  "500": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.774, P_rev = 0.005; rmse vs VAMPIRE mean over 800-300 K = 0.0164",
+    "500 K/ns, 25 seeds: up 25, reversed 0, partly ordered 0; mean final Mz = +0.7874 +- 0.0005; mean |m| at 300 K = 0.790; P_down = 0.000",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.010 +- 0.012 | +0.009 | 3.242e+12",
+    " 700 | +0.020 +- 0.016 | +0.019 | 1.650e+12",
+    " 680 | +0.027 +- 0.022 | +0.029 | 4.706e+11",
+    " 660 | +0.074 +- 0.028 | +0.058 | 1.894e+11",
+    " 640 | +0.134 +- 0.036 | +0.154 | 3.681e+10",
+    " 620 | +0.218 +- 0.032 | +0.261 | 1.296e+10",
+    " 600 | +0.327 +- 0.017 | +0.334 | 1.456e+08",
+    " 550 | +0.465 +- 0.011 | +0.458 | 5.742e+02",
+    " 500 | +0.561 +- 0.007 | +0.546 | 1.285e-04",
+    " 400 | +0.695 +- 0.003 | +0.677 | 2.443e-17",
+    " 305 | +0.787 +- 0.003 | +0.770 | 4.009e-18"
+   ],
+   "m300": 0.774,
+   "p_rev": 0.005,
+   "rmse": 0.0164,
+   "n_seeds": 25,
+   "up": 25,
+   "down": 0,
+   "partial": 0,
+   "mean_final": 0.7874,
+   "sem_final": 0.0005,
+   "m_300_abs": 0.79,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_500/mz_500.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_500Kns"
+  },
+  "1000": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.752, P_rev = 0.020; rmse vs VAMPIRE mean over 800-300 K = 0.0200",
+    "1000 K/ns, 50 seeds: up 49, reversed 1, partly ordered 0; mean final Mz = +0.7567 +- 0.0315; mean |m| at 300 K = 0.790; P_down = 0.020",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.009 +- 0.008 | +0.009 | 3.242e+12",
+    " 700 | +0.028 +- 0.011 | +0.019 | 1.650e+12",
+    " 680 | +0.045 +- 0.015 | +0.029 | 4.706e+11",
+    " 660 | +0.066 +- 0.018 | +0.056 | 1.894e+11",
+    " 640 | +0.106 +- 0.026 | +0.148 | 3.681e+10",
+    " 620 | +0.191 +- 0.030 | +0.253 | 1.296e+10",
+    " 600 | +0.285 +- 0.032 | +0.324 | 1.456e+08",
+    " 550 | +0.433 +- 0.038 | +0.444 | 5.742e+02",
+    " 500 | +0.528 +- 0.045 | +0.530 | 1.285e-04",
+    " 400 | +0.667 +- 0.055 | +0.657 | 2.443e-17",
+    " 305 | +0.757 +- 0.063 | +0.748 | 4.009e-18"
+   ],
+   "m300": 0.752,
+   "p_rev": 0.02,
+   "rmse": 0.02,
+   "n_seeds": 50,
+   "up": 49,
+   "down": 1,
+   "partial": 0,
+   "mean_final": 0.7567,
+   "sem_final": 0.0315,
+   "m_300_abs": 0.79,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_1000/mz_1000_v2.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_1000Kns"
+  },
+  "1500": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.728, P_rev = 0.035; rmse vs VAMPIRE mean over 800-300 K = 0.0380",
+    "1500 K/ns, 50 seeds: up 47, reversed 3, partly ordered 0; mean final Mz = +0.6925 +- 0.0534; mean |m| at 300 K = 0.789; P_down = 0.060",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.014 +- 0.009 | +0.009 | 3.242e+12",
+    " 700 | +0.021 +- 0.012 | +0.019 | 1.650e+12",
+    " 680 | +0.032 +- 0.014 | +0.029 | 4.706e+11",
+    " 660 | +0.052 +- 0.021 | +0.055 | 1.894e+11",
+    " 640 | +0.107 +- 0.023 | +0.143 | 3.681e+10",
+    " 620 | +0.149 +- 0.033 | +0.245 | 1.296e+10",
+    " 600 | +0.216 +- 0.045 | +0.314 | 1.456e+08",
+    " 550 | +0.387 +- 0.061 | +0.430 | 5.742e+02",
+    " 500 | +0.491 +- 0.075 | +0.513 | 1.285e-04",
+    " 400 | +0.611 +- 0.093 | +0.636 | 2.443e-17",
+    " 305 | +0.692 +- 0.107 | +0.724 | 4.009e-18"
+   ],
+   "m300": 0.728,
+   "p_rev": 0.035,
+   "rmse": 0.038,
+   "n_seeds": 50,
+   "up": 47,
+   "down": 3,
+   "partial": 0,
+   "mean_final": 0.6925,
+   "sem_final": 0.0534,
+   "m_300_abs": 0.789,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_1500/mz_1500.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_1500Kns"
+  },
+  "2000": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.707, P_rev = 0.048; rmse vs VAMPIRE mean over 800-300 K = 0.0486",
+    "2000 K/ns, 50 seeds: up 46, reversed 3, partly ordered 1; mean final Mz = +0.6891 +- 0.0534; mean |m| at 300 K = 0.788; P_down = 0.060",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.011 +- 0.008 | +0.009 | 3.242e+12",
+    " 700 | +0.026 +- 0.011 | +0.019 | 1.650e+12",
+    " 680 | +0.041 +- 0.012 | +0.029 | 4.706e+11",
+    " 660 | +0.050 +- 0.018 | +0.053 | 1.894e+11",
+    " 640 | +0.074 +- 0.024 | +0.139 | 3.681e+10",
+    " 620 | +0.127 +- 0.033 | +0.238 | 1.296e+10",
+    " 600 | +0.202 +- 0.041 | +0.304 | 1.456e+08",
+    " 550 | +0.363 +- 0.064 | +0.418 | 5.742e+02",
+    " 500 | +0.451 +- 0.078 | +0.498 | 1.285e-04",
+    " 400 | +0.588 +- 0.096 | +0.618 | 2.443e-17",
+    " 305 | +0.689 +- 0.107 | +0.703 | 4.009e-18"
+   ],
+   "m300": 0.707,
+   "p_rev": 0.048,
+   "rmse": 0.0486,
+   "n_seeds": 50,
+   "up": 46,
+   "down": 3,
+   "partial": 1,
+   "mean_final": 0.6891,
+   "sem_final": 0.0534,
+   "m_300_abs": 0.788,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_2000/mz_2000.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_2000Kns"
+  },
+  "6000": {
+   "raw_lines": [
+    "ME = me_B_roy (Roy): omega1(T)=gamma/chi_perp(T), (1-H/HK)^2 barrier; Tc = 643 K",
+    "ME: m(300 K) = 0.602, P_rev = 0.116; rmse vs VAMPIRE mean over 800-300 K = 0.0739",
+    "6000 K/ns, 50 seeds: up 38, reversed 1, partly ordered 11; mean final Mz = +0.5907 +- 0.0559; mean |m| at 300 K = 0.726; P_down = 0.080",
+    "T(K) | VAMPIRE mean +- 2 sem | ME Roy | Gamma_Roy (1/s)",
+    " 750 | +0.013 +- 0.009 | +0.009 | 3.242e+12",
+    " 700 | +0.026 +- 0.012 | +0.019 | 1.650e+12",
+    " 680 | +0.027 +- 0.014 | +0.027 | 4.706e+11",
+    " 660 | +0.030 +- 0.016 | +0.048 | 1.894e+11",
+    " 640 | +0.046 +- 0.018 | +0.119 | 3.681e+10",
+    " 620 | +0.079 +- 0.027 | +0.202 | 1.296e+10",
+    " 600 | +0.108 +- 0.032 | +0.259 | 1.456e+08",
+    " 550 | +0.224 +- 0.054 | +0.355 | 5.742e+02",
+    " 500 | +0.333 +- 0.075 | +0.424 | 1.285e-04",
+    " 400 | +0.493 +- 0.095 | +0.526 | 2.443e-17",
+    " 305 | +0.591 +- 0.112 | +0.598 | 4.009e-18"
+   ],
+   "m300": 0.602,
+   "p_rev": 0.116,
+   "rmse": 0.0739,
+   "n_seeds": 50,
+   "up": 38,
+   "down": 1,
+   "partial": 11,
+   "mean_final": 0.5907,
+   "sem_final": 0.0559,
+   "m_300_abs": 0.726,
+   "reference_figures": {
+    "png": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/derived/plots_6000/mz_6000.png"
+   },
+   "run_dir": "/data/mint_lab/projects/Cooling_Model_Comparison/data/raw/vampire_damp0p05_D4nm/cooling_T800/runs/rate_6000Kns"
+  }
+ }
+}

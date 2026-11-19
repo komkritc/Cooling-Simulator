@@ -1,0 +1,11 @@
+{
+ "7455423f6fa21bf0117658112036e97730ddafa288f5a596627d0fb76bf1b090": {
+  "registered": true,
+  "D_nm": 4.0,
+  "Tc_K": 643.0,
+  "D_range_nm": [1.0, 10.0],
+  "T_range_K": [0.0, 1000.0],
+  "built_from": "RF surrogate (model sha256 18bbec33eb0144f84c3d31f5c436343d673efdc52a8f5456efbe97921ecce14d), make_lut.py",
+  "note": "D_nm = validated reference diameter (deck diameters within 5 % snap to it, as in the RF baseline)"
+ }
+}

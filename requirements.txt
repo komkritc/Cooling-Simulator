@@ -1,0 +1,4 @@
+# Pinned versions used for the validated regression baseline
+numpy==2.5.5
+matplotlib==3.11.1
+PySide6==6.12.0

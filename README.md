@@ -1,5 +1,8 @@
 # ME Cooling Simulator (cooling_simulator/)
 
+Desktop PySide6 app plus a browser (Streamlit) port in `web/`.
+Physics solver is shared unchanged between the two.
+
 Run: `./run.sh` (simple GUI) · old full GUI: `.venv/bin/python app_full.py`
 
 ---

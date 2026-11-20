@@ -43,6 +43,9 @@ cd .../app/web
 | `tests/test_web_parity.py` | all six rates match `app/baselines/golden.json`; three figure variants (dark, light, light+smoothed) are each byte-identical to a figure the desktop app saved; numpy/matplotlib pins; **all three bundled runs** (100, 200, 500 K/ns) reproduce the desktop comparison contract (seeds, m/ms both sides, Δ, RMSE, mean m_z, up/down/reversed seeds, validation counts); ZIP upload resolves and zip-slip attempts are rejected |
 | `tests/test_web_ui.py` | driven through streamlit's `AppTest`: default inputs match the desktop values; Run ME produces a figure and the 1.3977 ratio; rate −/+ buttons drive the rate box; D and field stay in sync; atoms-from-D; sample load, import settings, clear; the Psw / m-ms tab is absent |
 
+`web/baselines/capture_from_desktop.py` (run it with the desktop venv, `.venv/bin/python`) regenerates every hash and comparison number straight from the
+desktop app, so the contract can be refreshed when the desktop app changes.
+
 **If a test fails, the web app is not trustworthy** — the numbers or the figure
 drifted away from the validated desktop output. `context.check_pins()` also
 prints a warning in the sidebar whenever the installed numpy/matplotlib differs
@@ -62,7 +65,8 @@ web/webapp/
   exports.py      PNG / CSV / standalone .py / audit record
   uploads.py      sample data + ZIP/file uploads, temp folders
 web/tests/          parity tests (physics) + UI tests (AppTest)
-web/baselines/      figure hash + comparison numbers (the acceptance contract)
+web/baselines/      figure hashes + comparison numbers (the acceptance contract)
+                      capture_from_desktop.py regenerates them from the desktop app
 web/data/           optional local LUT copy (git-ignored; not present — the
                       app uses ../lut_current_rf_1-10nm_dD0p1.csv)
 web/sample_data/    bundled aggregated VAMPIRE runs - see sample_data/README.md

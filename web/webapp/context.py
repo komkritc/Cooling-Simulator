@@ -19,6 +19,33 @@ from studio.core.lut_material import LUT_NAME
 from studio.gui import theme
 
 WEB_DIR = Path(__file__).resolve().parent.parent          # .../app/web
+REPO_DIR = WEB_DIR.parent                                 # the git repo root
+
+
+LUT_ENV_FROM_OS = os.environ.get("ME_LUT_FILE")   # as launched, before we touch it
+
+
+def _ensure_lut_env() -> str:
+    """Make sure ME_LUT_FILE points at a LUT that this checkout really contains.
+
+    studio.core.find_lut() only looks at $ME_LUT_FILE, <repo>/../data and <repo>/data.
+    In this workspace the LUT also lives one level above the repo (ME_Cooling_LUT/data),
+    which is why the desktop app finds it - but a plain clone (that is exactly what
+    Streamlit Cloud gets) has the CSV at the repo root, and that is not one of the
+    candidates.  So the web app resolves it itself, in order of preference.
+    """
+    if LUT_ENV_FROM_OS and Path(LUT_ENV_FROM_OS).is_file():
+        return LUT_ENV_FROM_OS          # an explicit override always wins
+    for cand in (WEB_DIR / "data" / LUT_NAME,             # standalone-mirror location
+                 REPO_DIR / LUT_NAME,                     # plain clone: CSV at repo root
+                 REPO_DIR.parent / "data" / LUT_NAME):    # ME_Cooling_LUT/data (workspace)
+        if cand.is_file():
+            os.environ["ME_LUT_FILE"] = str(cand)
+            return str(cand)
+    return ""                                             # no LUT: find_lut() stays empty
+
+
+LUT_PATH = _ensure_lut_env()
 SAMPLE_DATA = WEB_DIR / "sample_data"
 # folder handed to AnalysisSession, same layout as a desktop "Load run" folder
 SAMPLE_ROOT = SAMPLE_DATA / "vampire_damp0p05_D4nm"

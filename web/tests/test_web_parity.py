@@ -177,3 +177,22 @@ def test_zip_with_real_run_resolves_to_run_dir(tmp_path):
     # zipped from inside rate_*Kns -> the extraction root IS the run folder
     assert any(p.name.startswith("seed_") for p in Path(got).iterdir())
     uploads.cleanup_all()
+
+
+def test_lut_resolves_inside_the_repo():
+    """A plain clone (what Streamlit Cloud gets) must find the LUT on its own.
+
+    studio.core.find_lut() does not look at the repo root; in this workspace the CSV
+    also exists one level above the repo, so only context._ensure_lut_env() makes the
+    clone case work.  Regression test for the deployment bug that broke every
+    LUT-driven run in a fresh clone.
+    """
+    if ctx.LUT_ENV_FROM_OS:                   # an explicit override wins, by design
+        pytest.skip("ME_LUT_FILE was set outside the app")
+    from studio.core.lut_material import find_lut
+
+    got = Path(str(find_lut()))
+    assert got.is_file(), "no LUT found - the app cannot map D -> material inputs"
+    assert APP in got.parents or got.parent == APP, f"{got} is outside the repo"
+    assert got.name.startswith("lut_") and got.suffix == ".csv"
+    assert ctx.LUT_PATH == str(got)

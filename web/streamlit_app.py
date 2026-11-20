@@ -16,11 +16,9 @@ _ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _ROOT)                                          # webapp package
 sys.path.insert(0, os.path.abspath(os.path.join(_ROOT, "..")))     # studio.core
 
-# The LUT lives next to the app in this checkout; for a standalone mirror repo it can be
-# placed in web/data/ (studio.core.find_lut() also looks in <repo>/data).
-_LUT = os.path.join(_ROOT, "data", "lut_current_rf_1-10nm_dD0p1.csv")
-if os.path.isfile(_LUT):
-    os.environ.setdefault("ME_LUT_FILE", _LUT)
+# Which LUT CSV to use is resolved by webapp/context.py: web/data/ (mirror-repo copy),
+# the repo root (a plain clone, e.g. Streamlit Cloud), then ME_Cooling_LUT/data.
+# It must be resolved before studio.core.find_lut() is ever called.
 
 import streamlit as st                                            # noqa: E402
 

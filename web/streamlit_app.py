@@ -39,11 +39,11 @@ def main() -> None:
     st.session_state.setdefault("notice", "")
     st.session_state.setdefault("vampire_info", "")
 
-    pal = ctx.palette("dark" if st.session_state.get("wid_dark", True) else "light")
+    pal = ctx.palette("dark" if st.session_state.get("wid_dark", ctx.DEFAULTS["dark"]) else "light")
 
     st.title("ME Cooling Simulator")
-    st.caption("Roy two-state master equation · current lookup table · VAMPIRE "
-               "micro-magnetic runs · the same solver as the desktop app")
+    st.caption("Prof. Roy W. Chantrell Master Equation · current lookup table · "
+               "VAMPIRE micro-magnetic runs · the same solver as the desktop app")
 
     s = sidebar.render(pal)
 

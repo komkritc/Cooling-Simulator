@@ -39,12 +39,19 @@ def _sample(at, rate: str) -> AppTest:
 
 
 def test_starts_like_the_desktop(at):
-    """Every parameter opens at the desktop SimpleWindow default."""
+    """Every parameter opens at the desktop SimpleWindow default.
+
+    The web app deliberately differs in one way only: Savitzky-Golay smoothing of the
+    *plotted* curve starts switched on (the numbers, the CSV export and the solver are
+    untouched). The theme starts light, as on the desktop (app.py reads theme=light).
+    """
     ss = at.session_state
     for key, want in [("set_rates_text", "500"), ("wid_d_nm", 4.0), ("wid_t0", 800.0),
                       ("wid_t1", 300.0), ("wid_b_nm", 1.00531), ("wid_damp", 0.05),
                       ("wid_atoms", 4602), ("wid_p0", 0.5), ("wid_grid", True),
-                      ("wid_params_on", True), ("wid_invert_x", True), ("wid_sg_on", False)]:
+                      ("wid_params_on", True), ("wid_invert_x", True),
+                      ("wid_dark", False), ("wid_sg_on", True),
+                      ("wid_sg_win", 15.0), ("wid_sg_poly", 3)]:
         assert ss[key] == want, key
     assert ss["me_results"] == []                       # nothing computed until Run ME
 

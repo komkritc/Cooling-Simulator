@@ -3,10 +3,14 @@
 Output of VAMPIRE (`vampire-2025-08-06`) finite-temperature simulations of the
 same grain the ME model simulates: an L1₀ FePt-style grain (FePt_L10_sc_6350.mat
 decks), damping α = 0.05, diameter 4.0 nm, field-cooled 800 K → 300 K. Each
-`rate_*Kns/` folder holds 25 independent seeds.
+`rate_*Kns/` folder holds 25 independent seeds
+(`seed_1 … seed_25`, the same ensemble in every run, so the runs are comparable
+against each other). The 100 K/ns source folder actually has 26 completed seeds;
+`seed_26` is deliberately not bundled, to keep one common 25-seed ensemble.
 
 | folder | cooling rate | seeds |
 |---|---|---|
+| `vampire_damp0p05_D4nm/cooling_T800/runs/rate_100Kns/` | 100 K/ns | 25 |
 | `vampire_damp0p05_D4nm/cooling_T800/runs/rate_200Kns/` | 200 K/ns | 25 |
 | `vampire_damp0p05_D4nm/cooling_T800/runs/rate_500Kns/` | 500 K/ns | 25 |
 

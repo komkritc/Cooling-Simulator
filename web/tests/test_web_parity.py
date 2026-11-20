@@ -15,6 +15,7 @@ import sys
 import zipfile
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 WEB = Path(__file__).resolve().parents[1]
@@ -50,13 +51,31 @@ def test_rates_match_desktop_golden(rate):
         assert abs(float(m[i]) - want) <= 6e-4, f"{rate} K/ns @{Tq} K: {m[i]} != {want}"
 
 
-def test_figure_is_byte_identical_to_desktop():
-    """Same matplotlib + same drawing code -> the same PNG bytes the desktop saved."""
-    pal = ctx.palette("dark")
-    s = dict(ctx.DEFAULTS)
-    fig, _ = plot_simple.draw(s, runner.run_me(s, [500.0]), None, pal)
-    got = hashlib.sha256(_png(fig)).hexdigest()
-    assert got == GOLD["figure"]["sha256"], "figure bytes changed - run the desktop app"
+def _fig_hash(dark: bool, sg_on: bool) -> str:
+    s = dict(ctx.DEFAULTS, dark=dark, sg_on=sg_on)
+    fig, _ = plot_simple.draw(s, runner.run_me(s, [500.0]), None,
+                              ctx.palette("dark" if dark else "light"))
+    return hashlib.sha256(_png(fig)).hexdigest()
+
+
+@pytest.mark.parametrize("key,dark,sg", [("figure", True, False),
+                                         ("figure_light", False, False),
+                                         ("figure_default", False, True)])
+def test_figure_is_byte_identical_to_desktop(key, dark, sg):
+    """Same matplotlib + same drawing code -> the PNG bytes the desktop app saves.
+
+    Each variant was captured from the desktop app (offscreen, same sidebar
+    checkboxes, no VAMPIRE run) and stored in baselines/web_golden.json.
+    """
+    assert _fig_hash(dark, sg) == GOLD[key]["sha256"], f"{key}: figure bytes changed"
+
+
+def test_web_default_is_light_with_smoothing():
+    """The web app starts light and smoothed; both figures are the desktop bytes."""
+    assert ctx.DEFAULTS["dark"] is False and ctx.DARK is False
+    assert ctx.DEFAULTS["sg_on"] is True
+    assert _fig_hash(ctx.DEFAULTS["dark"], ctx.DEFAULTS["sg_on"]) == \
+        GOLD["figure_default"]["sha256"]
 
 
 def test_pins_are_the_pinned_versions():
@@ -65,33 +84,46 @@ def test_pins_are_the_pinned_versions():
 
 
 # ------------------------------------------------------- VAMPIRE sample data ----
-def test_bundled_sample_matches_golden():
+SAMPLE_RUNS = sorted(GOLD["vampire_samples"]["runs"])
+
+
+def test_bundled_runs_are_all_present():
+    """Every run named in the contract is bundled, with the same seed count."""
+    got = {Path(d).name for d in ctx.sample_run_dirs()}
+    assert set(SAMPLE_RUNS) <= got, f"missing {set(SAMPLE_RUNS) - got}"
+
+
+@pytest.mark.parametrize("name", SAMPLE_RUNS)
+def test_bundled_sample_matches_desktop_contract(name):
+    """The web app reproduces the desktop comparison for every bundled run."""
     from studio.core.session import AnalysisSession
-    dirs = ctx.sample_run_dirs()
-    assert dirs, "bundled sample runs are missing"
-    want = GOLD["vampire_sample"]["run"]                      # e.g. "rate_500Kns"
-    run = next(d for d in dirs if Path(d).name == want)
+    v = GOLD["vampire_samples"]["runs"][name]
+    run = next(d for d in ctx.sample_run_dirs() if Path(d).name == name)
     s = AnalysisSession(run)
     s.load_seeds()
-    v = GOLD["vampire_sample"]
-    assert len(s.seeds) == v["seeds"]
+    assert len(s.seeds) == v["seeds"], f"{name}: seed count changed"
     assert abs(s.rate_deck - v["rate_deck"]) < 1e-9
     assert s.cfg is not None, s.mapping_error
 
     st = runner.vampire_stats(s)
-    ratio, _, _, why = runner.vampire_final(st, 300.0)
+    ratio, median_mz, _, why = runner.vampire_final(st, 300.0)
     assert ratio is not None, why
-    assert round(ratio, 4) == v["vampire_ratio_at_300K"]
+    assert round(ratio, 4) == v["vampire_ratio_at_300K"], name
+    assert round(float(np.mean(st.mz_per_seed[:, -1])), 4) == v["mean_mz_final"], name
 
-    ui = dict(ctx.DEFAULTS)
-    _, T, m, P, ms, Tc = runner.run_me(ui, [500.0])[0]
-    assert round(float(m[-1] / ms[-1]), 4) == v["me_ratio_at_300K"]
-    assert round(st.rmse_me(T, m), 4) == v["rmse_vs_vampire"]
+    ui = dict(ctx.DEFAULTS)                       # d = 4 nm, same cell/moment as the decks
+    _, T, m, P, ms, Tc = runner.run_me(ui, [v["rate_deck"]])[0]
+    me_ratio = float(m[-1] / ms[-1])
+    assert round(me_ratio, 4) == v["me_ratio_at_300K"], name
+    assert round(abs(me_ratio - ratio), 4) == v["me_minus_vampire"], name
+    assert round(st.rmse_me(T, m), 4) == v["rmse_vs_vampire"], name
 
     issues = s.validate()
     counts = {sev: sum(1 for i in issues if i.severity == sev)
               for sev in ("pass", "warning", "critical")}
-    assert counts == v["validation"]
+    assert counts == {"pass": v["validation"]["pss"],
+                      "warning": v["validation"]["warning"],
+                      "critical": v["validation"]["critical"]}, name
 
 
 def test_sample_data_is_aggregated_only():

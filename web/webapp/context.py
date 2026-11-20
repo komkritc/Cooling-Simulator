@@ -29,7 +29,7 @@ MPL_VERSION = "3.11.1"
 # Figure of SimpleWindow (simple_window.py:211): 7x5 inches at 100 dpi, one axis.
 PLOT_FIG_W, PLOT_FIG_H, PLOT_DPI = 7.0, 5.0, 100
 
-DARK = True                       # desktop starts dark; switchable from the sidebar
+DARK = False                      # the web app starts light (sidebar can switch to dark)
 
 # Line cycle: SimpleWindow.COLORS (Okabe-Ito colour-blind-safe set).
 COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000"]
@@ -66,8 +66,8 @@ DEFAULTS: dict = dict(
     d_nm=4.0, t0=800.0, t1=300.0, b_T=1.00531, damp=0.05,
     atoms=4602, a_A=2.72, c_A=3.85, mu_mub=3.23, gamma_rel=1.0, dT=1.0, p0=0.5,
     damp_use=0,                     # 0 = "λ = α (validated)", 1 = "λ = α/(1+α²)"
-    sg_on=False, sg_win=15.0, sg_poly=3,
-    grid=True, params_on=True, dark=True, invert_x=True, import_vampire=True,
+    sg_on=True, sg_win=15.0, sg_poly=3,        # smoothing on by default on the web
+    grid=True, params_on=True, dark=False, invert_x=True, import_vampire=True,
     vpath="",
 )
 

@@ -4,8 +4,8 @@ Streamlit port of the desktop app. It reuses the **same physics code**
 (`studio/core/`) with **zero changes**, so its numbers are identical to the
 desktop app by construction — and the exported figure is **byte-identical**.
 
-Physics of this app (and of the desktop app): Pallas-Yateson coupled heat and
-magnetisation equations, with the Lindhard-Kohlert damping tensor `A` evaluated
+Physics of this app (and of the desktop app): the **Prof. Roy W. Chantrell Master
+Equation** — Pallas-Yateson coupled heat and magnetisation equations, with the Lindhard-Kohlert damping tensor `A` evaluated
 from the validated **1–10 nm LUT** (`lut_current_rf_1-10nm_dD0p1.csv`, registered
 by SHA-256). The solver uses adaptive Runge-Kutta steps. This is a phenomenological
 two-temperature style model — it does not resolve electron or phonon populations
@@ -35,12 +35,12 @@ run takes well under a second.
 
 ```bash
 cd .../app/web
-.venv/bin/python -m pytest tests -q      # 28 tests, ~20 s
+.venv/bin/python -m pytest tests -q      # 34 tests, ~20 s
 ```
 
 | file | checks |
 |---|---|
-| `tests/test_web_parity.py` | all six rates match `app/baselines/golden.json`; the exported PNG is byte-identical to the desktop figure (sha256 in `web/baselines/web_golden.json`); numpy/matplotlib pins; bundled VAMPIRE run loads and compares; ZIP upload resolves and zip-slip attempts are rejected |
+| `tests/test_web_parity.py` | all six rates match `app/baselines/golden.json`; three figure variants (dark, light, light+smoothed) are each byte-identical to a figure the desktop app saved; numpy/matplotlib pins; **all three bundled runs** (100, 200, 500 K/ns) reproduce the desktop comparison contract (seeds, m/ms both sides, Δ, RMSE, mean m_z, up/down/reversed seeds, validation counts); ZIP upload resolves and zip-slip attempts are rejected |
 | `tests/test_web_ui.py` | driven through streamlit's `AppTest`: default inputs match the desktop values; Run ME produces a figure and the 1.3977 ratio; rate −/+ buttons drive the rate box; D and field stay in sync; atoms-from-D; sample load, import settings, clear; the Psw / m-ms tab is absent |
 
 **If a test fails, the web app is not trustworthy** — the numbers or the figure
@@ -88,7 +88,7 @@ VAMPIRE comparison card, the validation card and the export buttons.
 | Field slider + box (linked, re-run) | `st.slider` 0–3 (0.0001 step) + `st.number_input` 0–50 | |
 | damping slider + box | `st.slider` 0–1 + box | always visible (replaces import-settings block) |
 | atoms, cell a/c, moment, γ, dT, P0, damp_use | `st.expander("Material & solver (more)")` + **atoms from D** button | cell shown in Å |
-| dark, grid, params, invert-x, Savitzky-Golay + window/poly | checkboxes + number inputs | identical defaults |
+| dark, grid, params, invert-x, Savitzky-Golay + window/poly | checkboxes + number inputs | same controls; the web app opens **light** (as the desktop does) and with **smoothing on** |
 | folder input + Load/Clear | `st.selectbox` of bundled runs + Load / Clear buttons | no folder picker in a browser |
 | ZIP / files upload | `st.file_uploader` (a .zip of the run folder, or the `*_input.json` / `.mat` / `output_seedN.dat` files) | temp dir per session, cleaned at exit |
 | import settings buttons | two checkboxes (auto-load / auto-clear) | same effect |
@@ -118,11 +118,33 @@ There is no Pext input and no separate thickness input (D is the thickness).
 | moment μ | 3.23 μB | `MEConfig` |
 | cell a / c | 2.72 / 3.85 Å | `MEConfig` |
 | numpy / matplotlib | 2.5.5 / 3.11.1 | `requirements.txt` + the desktop golden baseline |
-| figure hash (fixed run) | `1967cb52d12914…` | `web/baselines/web_golden.json` |
+| plotted curve smoothing | on by default on the web (window 15 K, order 3) — plot only, the solver, the ratio and the CSV stay raw | user decision; desktop default is off |
+| theme | light (the desktop also starts light: `app.py` reads `theme=light`) | sidebar can switch to dark |
+| figure hash, dark + no smoothing | `1967cb52d12914…` | `web/baselines/web_golden.json` |
+| figure hash, light + no smoothing | `4dc75cff008089…` | same file, `figure_light` |
+| figure hash, **web default** = light + smoothing | `b9b58da5047dc6…` | same file, `figure_default` |
 
 The solver itself is **adaptive Runge-Kutta** (`scipy`-free, inside
 `me_solver.py`), not a fixed-step scheme — `dT` only sets the temperature
 sampling of the output.
+
+## H. Bundled VAMPIRE sample runs (sidebar ▸ "example run")
+
+| run | cooling rate | seeds | ME m/ms @300 K | VAMPIRE m/ms @300 K | Δ | RMSE | up / down / reversed |
+|---|---|---|---|---|---|---|---|
+| `rate_100Kns` | 100 K/ns | 25 | 0.9996 | 0.9960 | 0.0035 | 0.0120 | 25 / 0 / 0 |
+| `rate_200Kns` | 200 K/ns | 25 | 0.9989 | 0.9966 | 0.0023 | 0.0118 | 25 / 0 / 0 |
+| `rate_500Kns` | 500 K/ns | 25 | 0.9895 | 0.9978 | 0.0083 | 0.0164 | 25 / 0 / 0 |
+
+All three come from the same grain (α = 0.05, D = 4.0 nm, 800 → 300 K) and use the
+same seed ensemble (`seed_1 … seed_25`), so the columns are comparable between
+runs. The source folder for 100 K/ns actually holds 26 completed seeds; the 26th
+was left out on purpose so that all bundled runs use the identical 25-seed
+ensemble. These numbers are the contract in `baselines/web_golden.json`
+(`vampire_samples`) and each one was captured from the **desktop** code path, so a
+web run that drifts fails the test suite.
+
+`sample_data/README.md` explains what ships per seed and how to add more runs.
 
 ## F. Deploying on share.streamlit.io (not done — one decision needed)
 
@@ -156,5 +178,5 @@ Until you choose, everything stays local and this repo keeps no remote.
    was removed is parked outside the tree at `../_attic_web_psw/psw_tab.py.removed`
    (git-ignored) in case it is ever wanted again
 7. ✅ hardening: pin check, D clamp to LUT range, upload size cap, temp cleanup
-8. ✅ docs + 28 tests
+8. ✅ docs + 34 tests (3 bundled runs, 3 figure variants)
 9. ⬜ deployment (blocked on the decision in F)

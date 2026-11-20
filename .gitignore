@@ -2,3 +2,5 @@
 tests/_records_tmp/
 __pycache__/
 .venv
+_attic_web_psw/
+web/data/

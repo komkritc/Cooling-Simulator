@@ -1,0 +1,18 @@
+{
+  "note": "Acceptance contract for the web app. Figure hash was captured from the DESKTOP app (QT_QPA_PLATFORM=offscreen, SimpleWindow._plot, savefig dpi=200 facecolor) with exactly webapp.context.DEFAULTS and no VAMPIRE data; the web path must produce the identical PNG bytes. Rate numbers are cross-checked against ../baselines/golden.json at test time.",
+  "matplotlib": "3.11.1",
+  "figure": {
+    "settings": "context.DEFAULTS (D=4.00 nm, 800->300 K, B=1.00531 T, lambda=0.05 raw, P0=0.5, atoms=4602, a=2.72 A, c=3.85 A, mu=3.23 muB, gamma=1, dT=1 K, SG off, grid on, params card on, dark, x inverted), rate 500 K/ns, no VAMPIRE run",
+    "dpi": 200,
+    "sha256": "1967cb52d1291445368e927d60fb7fec975e3efdcc29f5ea195e570bd4205096"
+  },
+  "vampire_sample": {
+    "run": "rate_500Kns",
+    "seeds": 25,
+    "rate_deck": 500.0,
+    "me_ratio_at_300K": 0.9895,
+    "vampire_ratio_at_300K": 0.9978,
+    "rmse_vs_vampire": 0.0164,
+    "validation": {"pass": 8, "warning": 5, "critical": 0}
+  }
+}

@@ -1,0 +1,7 @@
+# Web app (Streamlit) requirements — physics pins are identical to the desktop app.
+# PySide6 is deliberately NOT here: it is the desktop GUI only and would blow up
+# the free-tier build.  Install into web/.venv, never into the shared app/.venv.
+streamlit==1.67.0
+numpy==2.5.5
+matplotlib==3.11.1
+scipy==1.18.1

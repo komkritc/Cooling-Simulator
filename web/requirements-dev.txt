@@ -1,0 +1,2 @@
+# Development / test extras (not installed on Streamlit Community Cloud).
+pytest==9.2.0

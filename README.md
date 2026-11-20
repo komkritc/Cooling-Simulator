@@ -51,6 +51,7 @@ Status: **BUILT & REGRESSION-VERIFIED** — Phases 0–5 complete.
 ```bash
 ./run.sh                       # opens the GUI (uses pinned .venv)
 ./run.sh /path/to/rate_500Kns  # open a run directory directly
+bash web/run_web.sh            # browser version (Streamlit, own venv) - web/README.md
 ```
 
 GUI follows the approved mockup `ui.png`: left 5-step rail, tabs

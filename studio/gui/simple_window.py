@@ -606,7 +606,9 @@ class SimpleWindow(QMainWindow):
         Ts = []
         if vs is not None:
             vcol = COLORS[0]
-            vm = self._smooth(vs.T, vs.mean); vsem = self._smooth(vs.T, vs.sem)
+            # one seed -> sem is NaN (ddof=1); show no error band instead of crashing the plot
+            vm = self._smooth(vs.T, vs.mean)
+            vsem = self._smooth(vs.T, np.nan_to_num(np.asarray(vs.sem, float), nan=0.0))
             self.ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
             self.ax.plot(vs.T, vm, color=vcol, lw=2.2,
                          label=f"VAMPIRE {vrate:g} K/ns (n={vs.n}, \u00b12 s.e.m.)")
@@ -682,7 +684,7 @@ class SimpleWindow(QMainWindow):
 
         def job():
             from ..core.session import AnalysisSession
-            s = AnalysisSession(self._resolve(d)); s.load_seeds()
+            s = AnalysisSession(self._resolve(d), snap_diameter=False); s.load_seeds()   # use the deck's real diameter
             return s
 
         self._worker = Worker(job, self)
@@ -691,6 +693,10 @@ class SimpleWindow(QMainWindow):
 
     @staticmethod
     def _resolve(d):
+        # a single seed folder (seed_N with DONE) was picked: use its parent rate folder
+        if (os.path.basename(os.path.normpath(d)).startswith("seed_")
+                and os.path.isfile(os.path.join(d, "DONE"))):
+            return os.path.dirname(os.path.abspath(d))
         if not any(n.startswith("seed_") for n in os.listdir(d)):
             for root, dirs, _ in os.walk(d):
                 if any(n.startswith("rate_") for n in dirs):
@@ -740,6 +746,8 @@ class SimpleWindow(QMainWindow):
         synced = False
         if getattr(self, "_sync_rate", True) and s.rate_deck:
             self.ed_rates.setText(f"{s.rate_deck:g}"); synced = True
+        if s.cfg is not None:
+            note = f"\nGrain D = {s.rf_d:g} nm from the deck (LUT interpolated), N = {s.cfg.n_atoms} atoms" + note
         self.lbl_v.setText(f"{s.run_dir}\n{len(s.seeds)} seeds, {rate_txt}. "
                            + ("ME rate set to match (you can change it freely)." if synced
                               else "ME rate is set separately above.") + note)

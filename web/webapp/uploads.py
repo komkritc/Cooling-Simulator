@@ -99,6 +99,10 @@ def write_files(files, dest: str) -> str:
 
 def _resolve_run_dir(d: str) -> str:
     """SimpleWindow._resolve(): dig down to a folder holding seed_* directories."""
+    # a single seed folder (seed_N with DONE) was uploaded: use its parent rate folder
+    if (os.path.basename(os.path.normpath(d)).startswith("seed_")
+            and os.path.isfile(os.path.join(d, "DONE"))):
+        return os.path.dirname(os.path.abspath(d))
     if not any(n.startswith("seed_") for n in os.listdir(d)):
         for root, dirs, _ in os.walk(d):
             if any(n.startswith("rate_") for n in dirs):

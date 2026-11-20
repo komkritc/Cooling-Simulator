@@ -426,6 +426,9 @@ class MainWindow(QMainWindow):
         from studio.core.vampire_output_reader import find_seeds
         if find_seeds(d):
             return d
+        if (os.path.basename(os.path.normpath(d)).startswith("seed_")
+                and os.path.isfile(os.path.join(d, "DONE"))):
+            return os.path.dirname(os.path.abspath(d))
         cands = []
         for sub in ("runs", "."):
             p = os.path.join(d, sub)

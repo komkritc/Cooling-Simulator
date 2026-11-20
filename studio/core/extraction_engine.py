@@ -35,9 +35,15 @@ def parse_log_atoms(log_path: str) -> tuple[int | None, dict]:
     return atoms, info
 
 
+# VAMPIRE's native unit when a directive carries no `!unit` suffix. Still flagged
+# ASSUMED (needs review) - only the conversion no longer crashes.
+VAMPIRE_DEFAULT_UNIT = {"cooling_time": "s", "B_app": "T",
+                        "cell_a": "A", "cell_b": "A", "cell_c": "A"}
+
 def _rec_from_deck(d, key: str) -> ParameterRecord:
     st = Status.EXTRACTED if d.unit else Status.ASSUMED
-    return ParameterRecord(key=key, value=d.value, unit=d.unit or "unit:assumed",
+    return ParameterRecord(key=key, value=d.value,
+                           unit=d.unit or VAMPIRE_DEFAULT_UNIT.get(key, "unit:assumed"),
                            status=st,
                            sources=[Source(d.file, d.line, d.raw)])
 

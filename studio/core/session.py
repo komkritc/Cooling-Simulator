@@ -19,6 +19,7 @@ from .mapping_engine import map_to_me, me_inputs_for_solver, MappingError
 from .me_solver import MESolver
 from .lut_material import LutMaterial, find_lut, lut_info
 from .statistics import ComparisonStats, compute_stats
+from .units import to_si
 from .vampire_input_parser import parse_deck, DECK_KEYS
 from .vampire_mat_parser import parse_mat
 from .vampire_output_reader import (find_seeds, incomplete_seeds, load_seed,
@@ -42,7 +43,8 @@ class ComparisonResult:
 class AnalysisSession:
     def __init__(self, run_dir: str, *, rf_d_nm: float | None = None,
                  damping_interpretation: str = "identity",
-                 dT_grid_K: float = 1.0):
+                 dT_grid_K: float = 1.0,
+                 snap_diameter: bool = True):
         self.run_dir = os.path.abspath(run_dir)
         self.seed_dirs_all = find_seeds(self.run_dir)
         self.incomplete = incomplete_seeds(self.run_dir)
@@ -66,13 +68,17 @@ class AnalysisSession:
         self.model_dir = lut                      # path of the LUT csv (kept name for the audit/GUI)
         self.model_meta = lut_info(lut) if lut else None
 
-        # RF diameter: snap to the registered model's trained diameter when close
-        d_deck_nm = (self.table.value("grain_diameter") or 0) / 10.0
+        # RF diameter: by default snap to the registered model's trained diameter when within 5 %
+        # (validated baseline).  snap_diameter=False uses the deck's own particle size, which the
+        # LUT interpolates (e.g. 4.08 nm between the 4.0 and 4.1 nm grid rows).
+        _gd = self.table.get("grain_diameter")
+        d_deck_nm = (to_si(float(_gd.value), _gd.unit, what="grain diameter")
+                     / 1e-9) if _gd is not None and _gd.value else 0.0
         d_train = (self.model_meta or {}).get("metadata", {}).get("D_nm")
         self.rf_d_snapped = False
         if rf_d_nm is not None:
             self.rf_d = rf_d_nm
-        elif (d_train and d_deck_nm and
+        elif (snap_diameter and d_train and d_deck_nm and
               abs(d_deck_nm - d_train) / d_train <= 0.05):
             self.rf_d, self.rf_d_snapped = d_train, True
         else:

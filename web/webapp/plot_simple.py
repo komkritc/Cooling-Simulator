@@ -124,7 +124,8 @@ def draw(s, results, session, pal):
     if vs is not None:
         vcol = COLORS[0]
         vm = runner.smooth(s, vs.T, vs.mean)
-        vsem = runner.smooth(s, vs.T, vs.sem)
+        # one seed -> sem is NaN (ddof=1); show no error band instead of crashing the plot
+        vsem = runner.smooth(s, vs.T, np.nan_to_num(np.asarray(vs.sem, float), nan=0.0))
         ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
         ax.plot(vs.T, vm, color=vcol, lw=2.2,
                 label=f"VAMPIRE {vrate:g} K/ns (n={vs.n}, \u00b12 s.e.m.)")

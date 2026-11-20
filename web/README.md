@@ -110,7 +110,7 @@ There is no Pext input and no separate thickness input (D is the thickness).
 
 | quantity | value | where it comes from |
 |---|---|---|
-| D (particle diameter) | 1–10 nm LUT range, default 4.0 nm | LUT CSV header, `lut_material.py` |
+| D (particle diameter) | 1–10 nm LUT range, default 4.0 nm; **loading a VAMPIRE run sets D from the deck's `particle-size` (e.g. 40.8 Å = 4.08 nm) and the LUT interpolates to it** (no snap to 4.00 nm) | LUT CSV header, `lut_material.py`, deck |
 | damping tensor A | interpolated from the 1–10 nm LUT by SHA-256 | `lut_material.py`, `mapping_engine.py` |
 | γ (gyro) | 1 | `MEConfig`, desktop default |
 | dT (solver temperature step) | 1 K | `MEConfig`, desktop default |

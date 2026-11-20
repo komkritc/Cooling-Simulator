@@ -87,6 +87,7 @@ class PswTestTab(QWidget):
                                  "(a run with fewer seeds uses all it has; the table shows the count used)")
         self.lbl_vinfo = self._dim("")
         vl.addWidget(QLabel("Cooling rate")); vl.addWidget(self.cb_vrate)
+        self.cb_vrate.currentIndexChanged.connect(self._sync_me_rate)   # picking a VAMPIRE rate sets the ME rate to match
         vl.addWidget(QLabel("Number of seeds")); vl.addWidget(self.sp_seeds)
         vl.addWidget(self.lbl_vinfo)
         row_top = QHBoxLayout(); row_top.addWidget(me_card, 1); row_top.addWidget(v_card, 1)
@@ -139,6 +140,12 @@ class PswTestTab(QWidget):
     def _dim(text):
         l = QLabel(text); l.setWordWrap(True); l.setObjectName("stepDesc"); return l
 
+    def _sync_me_rate(self, *_):
+        """ME Solver rate follows the selected VAMPIRE rate (the ME box stays editable afterwards)."""
+        r = self.cb_vrate.currentData()
+        if r is not None:
+            self.sp_me_rate.setValue(float(r))
+
     def refresh_context(self):
         """Pull D / final T from the main form and list the VAMPIRE dataset rates."""
         m = self.main
@@ -165,6 +172,8 @@ class PswTestTab(QWidget):
                 want = min(self._runs, key=lambda r: abs(r - float(s.rate_deck or r)))
             i = self.cb_vrate.findData(want)
             self.cb_vrate.setCurrentIndex(max(i, 0))
+            if want != cur:                       # new dataset / first fill: match the ME rate; keep a manual ME edit otherwise
+                self._sync_me_rate()
             self.lbl_vinfo.setText(f"Dataset: {os.path.dirname(s.run_dir)}\n{len(self._runs)} rates available")
         else:
             self.lbl_vinfo.setText("No VAMPIRE data: load a run on the Cooling Simulator tab "

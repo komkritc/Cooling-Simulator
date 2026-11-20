@@ -105,6 +105,10 @@ def load_run(path: str) -> None:
     from studio.core.session import AnalysisSession
 
     def resolve(d):
+        # a single seed folder (seed_N with DONE) was picked: use its parent rate folder
+        if (os.path.basename(os.path.normpath(d)).startswith("seed_")
+                and os.path.isfile(os.path.join(d, "DONE"))):
+            return os.path.dirname(os.path.abspath(d))
         try:
             if not any(n.startswith("seed_") for n in os.listdir(d)):
                 for root, dirs, _ in os.walk(d):
@@ -119,7 +123,7 @@ def load_run(path: str) -> None:
         notice(f"Folder not found: {path}")
         return
     try:
-        s = AnalysisSession(resolve(path))
+        s = AnalysisSession(resolve(path), snap_diameter=False)   # use the deck's real diameter (no 4.00 nm snap)
         s.load_seeds()
     except Exception as e:
         st.session_state["session"] = None
@@ -138,6 +142,9 @@ def load_run(path: str) -> None:
     if s.rate_deck:
         st.session_state["set_rates_text"] = f"{s.rate_deck:g}"
         synced = True
+    if s.cfg is not None:
+        note = (f"\nGrain D = {s.rf_d:g} nm from the deck (LUT interpolated), "
+                f"N = {s.cfg.n_atoms} atoms") + note
     st.session_state["vampire_info"] = (
         f"{s.run_dir}\n{len(s.seeds)} seeds, {rate_txt}. "
         + ("ME rate set to match (you can change it freely)." if synced

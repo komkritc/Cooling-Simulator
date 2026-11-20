@@ -15,7 +15,7 @@ SUFFIX_TO_UNIT = {
     "t": "T", "tesla": "T",
     "k": "K", "kelvin": "K",
     "mub": "muB", "mu_b": "muB",
-    "m": "m", "m3": "m3", "j": "J", "am": "A/m", "a_per_m": "A/m",
+    "nm": "nm", "m": "m", "m3": "m3", "j": "J", "am": "A/m", "a_per_m": "A/m",
 }
 
 # canonical unit -> factor to multiply by to reach SI base
@@ -25,6 +25,7 @@ TO_SI = {
     "T": 1.0,            # flux density (VAMPIRE works with B)
     "K": 1.0,
     "muB": 9.2740100783e-24,   # Bohr magneton -> A m^2
+    "nm": 1e-9,          # nanometre -> m
     "m": 1.0,
     "m3": 1.0,
     "J": 1.0,

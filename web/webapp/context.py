@@ -140,6 +140,17 @@ def sample_label(run_dir: str) -> str:
     return f"{rate} K/ns  ({n} seeds)"
 
 
+def default_sample_label(samples: list[str] | None = None) -> str | None:
+    """The sample the web app boots with: the 200 K/ns run when present, else first."""
+    samples = samples if samples is not None else sample_run_dirs()
+    if not samples:
+        return None
+    for d in samples:
+        if Path(d).name == "rate_200Kns":
+            return sample_label(d)
+    return sample_label(samples[0])
+
+
 def palette(mode: str) -> dict:
     theme.set_mode("dark" if mode == "dark" else "light")
     return {k: getattr(theme, k) for k in

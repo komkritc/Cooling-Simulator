@@ -30,6 +30,16 @@ def at() -> AppTest:
     return a
 
 
+@pytest.fixture()
+def at_noboot() -> AppTest:
+    """Fresh app with the boot auto-load suppressed: pristine desktop defaults."""
+    a = AppTest.from_file(APP, default_timeout=300)
+    a.session_state["boot_done"] = True
+    a.run()
+    assert not a.exception, a.exception
+    return a
+
+
 def _sample(at, rate: str) -> AppTest:
     sel = next(s for s in at.sidebar.selectbox if s.label.startswith("example run"))
     sel.select(rate).run()
@@ -38,14 +48,14 @@ def _sample(at, rate: str) -> AppTest:
     return at
 
 
-def test_starts_like_the_desktop(at):
+def test_starts_like_the_desktop(at_noboot):
     """Every parameter opens at the desktop SimpleWindow default.
 
     The web app deliberately differs in one way only: Savitzky-Golay smoothing of the
     *plotted* curve starts switched on (the numbers, the CSV export and the solver are
     untouched). The theme starts light, as on the desktop (app.py reads theme=light).
     """
-    ss = at.session_state
+    ss = at_noboot.session_state
     for key, want in [("set_rates_text", "500"), ("wid_d_nm", 4.0), ("wid_t0", 800.0),
                       ("wid_t1", 300.0), ("wid_b_nm", 1.00531), ("wid_damp", 0.05),
                       ("wid_atoms", 4602), ("wid_p0", 0.5), ("wid_grid", True),
@@ -56,20 +66,32 @@ def test_starts_like_the_desktop(at):
     assert ss["me_results"] == []                       # nothing computed until Run ME
 
 
-def test_run_me_produces_curves_and_a_figure(at):
-    at.sidebar.button(key="b_run").click().run()
-    res = at.session_state["me_results"]
+def test_run_me_produces_curves_and_a_figure(at_noboot):
+    at_noboot.sidebar.button(key="b_run").click().run()
+    res = at_noboot.session_state["me_results"]
     assert [round(float(r[0]), 3) for r in res] == [500.0]
     assert round(float(res[0][2][-1]), 6) == 0.774476   # == desktop/golden m(300 K)
-    assert at.session_state["fig_obj"] is not None
-    assert at.session_state["notice"] == ""
-    assert at.session_state["run_params"]["d_nm"] == 4.0
+    assert at_noboot.session_state["fig_obj"] is not None
+    assert at_noboot.session_state["notice"] == ""
+    assert at_noboot.session_state["run_params"]["d_nm"] == 4.0
 
 
 def test_bad_rate_shows_the_desktop_message(at):
     at.sidebar.text_input(key="set_rates_text").set_value("abc").run()
     at.sidebar.button(key="b_run").click().run()
     assert at.session_state["notice"] == ctx.RATE_MSG
+
+
+def test_boot_opens_on_200Kns(at):
+    """First visit: the 200 K/ns sample is selected, loaded and the ME already ran."""
+    names = [ctx.sample_label(d) for d in ctx.sample_run_dirs()]
+    if not names:
+        pytest.skip("no bundled sample data")
+    assert at.session_state["wid_sample"] == ctx.default_sample_label()
+    assert "200" in at.session_state["wid_sample"]
+    assert at.session_state["session"] is not None
+    assert at.session_state["me_results"]
+    assert not at.session_state["notice"]
 
 
 def test_sample_dropdown_autoloads(at):
@@ -107,10 +129,10 @@ def test_field_change_reruns(at):
 
 def test_rate_bump_buttons_edit_and_rerun(at):
     at.sidebar.button(key="b_rp100").click().run()
-    assert at.session_state["set_rates_text"] == "600"
-    assert [round(float(r[0]), 3) for r in at.session_state["me_results"]] == [600.0]
+    assert at.session_state["set_rates_text"] == "300"
+    assert [round(float(r[0]), 3) for r in at.session_state["me_results"]] == [300.0]
     at.sidebar.button(key="b_rm100").click().run()
-    assert at.session_state["set_rates_text"] == "500"
+    assert at.session_state["set_rates_text"] == "200"
 
 
 def test_atoms_from_d_button(at):
@@ -141,6 +163,7 @@ def test_clear_removes_vampire_data(at):
 
 
 def test_load_without_anything_selected(at):
+    at.sidebar.selectbox(key="wid_sample").set_value("(none - upload a run)").run()
     at.sidebar.button(key="b_load").click().run()
     assert "Pick a bundled example" in at.session_state["notice"]
 

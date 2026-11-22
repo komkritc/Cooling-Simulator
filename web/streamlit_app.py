@@ -37,6 +37,15 @@ def main() -> None:
     st.session_state.setdefault("notice", "")
     st.session_state.setdefault("vampire_info", "")
 
+    # boot: on the very first visit, open on the 200 K/ns bundled sample - load it and
+    # run the ME once so the plots are ready without clicking anything.
+    if not st.session_state.get("boot_done"):
+        st.session_state["boot_done"] = True
+        first = ctx.default_sample_label()
+        if first:
+            st.session_state["wid_sample"] = first
+            actions.on_load()
+
     pal = ctx.palette("dark" if st.session_state.get("wid_dark", ctx.DEFAULTS["dark"]) else "light")
 
     st.markdown("<div style='font-size:1.3rem;font-weight:700;line-height:1.2;"

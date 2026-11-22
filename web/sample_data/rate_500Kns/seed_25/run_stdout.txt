@@ -1,0 +1,48 @@
+[33m[33m[0m[0m                                                _          
+                                               (_)         
+                    __   ____ _ _ __ ___  _ __  _ _ __ ___ 
+                    \ \ / / _` | '_ ` _ \| '_ \| | '__/ _ \
+                     \ V / (_| | | | | | | |_) | | | |  __/
+                      \_/ \__,_|_| |_| |_| .__/|_|_|  \___|
+                                         | |               
+                                         |_|               
+
+                      Version 7.0.0 Apr 29 2026 03:43:31
+
+             Git commit: 525bc27ee44c525aee229570f30f3d4c61d54f66
+
+  Licensed under the GNU Public License(v2). See licence file for details.
+
+  Developers:   Richard F L Evans, Sarah Jenkins, Andrea Meo, 
+                Daniel Meilak, Andrew Naden, Matthew Ellis,
+                Oscar Arbelaez, Sam Morris, Rory Pond, Weijia Fan,
+                Phanwadee Chureemart, Pawel Sobieszczyk, Joe Barker, 
+                Thomas Ostler, Andreas Biternas, Roy W Chantrell,
+                Wu Hong-Ye, Razvan Ababei, Sam Westmoreland,
+                Milton Persson
+ 
+                Compiler Flags: MPI 
+
+  Vampire includes a copy of the qhull library from C.B. Barber and The 
+  Geometry Center and may be obtained via http from www.qhull.org.
+
+================================================================================
+Sat Nov 21 13:01:11 2026
+Processor 1 of 1 online on host localai
+================================================================================
+Initialising system variables
+Creating system
+System decomposed into 1 x 1 x 1 processors for parallel execution
+Copying halo atoms to other processors...[32m[32mdone!
+[0m[0mGenerating neighbour list..........[32m[32mdone!
+[0m[0mInitialising MPI communications...done!
+Copying system data to optimised data structures.
+Using generic/normalised form of exchange interaction with 6 total interactions.
+Total number of atoms (all CPUs): 4602
+Time for initialisation: 0.0104309
+Preconditioning spin configuration at T = 800 K..........Done!
+Preconditioning time for 80000 steps: 45.0306 s
+Starting Simulation with Program Field-Cool...
+Simulation run time [s]: 4049.13
+[32m[32mSimulation ended gracefully.
+[0m[0m

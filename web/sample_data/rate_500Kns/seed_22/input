@@ -1,0 +1,65 @@
+create:cylinder
+
+#------------------------------------------
+# System Dimensions
+#------------------------------------------
+dimensions:unit-cell-size-x = 2.72 !A
+dimensions:unit-cell-size-y = 2.72 !A
+dimensions:unit-cell-size-z = 3.85 !A
+
+dimensions:system-size-x = 5 !nm
+dimensions:system-size-y = 5 !nm
+dimensions:system-size-z = 10.0 !nm
+dimensions:particle-size = 4 !nm
+dimensions:particle-spacing = 1.0 !nm
+
+#------------------------------------------
+# Material File
+#------------------------------------------
+material:file=FePtsc6350.mat
+
+#------------------------------------------
+# Simulation attributes
+#------------------------------------------
+sim:temperature=800
+sim:minimum-temperature=300                                                                                               
+sim:maximum-temperature=800 
+# B = 1 T along +z
+sim:applied-field-strength=1.0 !T
+sim:applied-field-unit-vector=0,0,1
+
+# Equilibrate at the initial cooling temperature
+sim:equilibration-temperature=800
+sim:equilibration-time-steps=200000
+sim:preconditioning-steps=80000
+
+# Linear cooling: 800 K -> 300 K at 500 K/ns
+sim:cooling-time=1e-09
+sim:cooling-function=linear
+
+sim:time-steps-increment=1
+sim:total-time-steps=10000000
+sim:time-step=1.0e-16
+
+sim:integrator-random-seed=100022
+
+#------------------------------------------
+# Program and integrator
+#------------------------------------------
+sim:program=field-cool
+sim:integrator=llg-heun
+
+#------------------------------------------
+# Output: approximately one point per 1 K
+#------------------------------------------
+output:real-time
+output:temperature
+output:magnetisation
+output:magnetisation-length
+output:mean-magnetisation-length 
+output:output-rate=20000
+
+grain:output-rate=20000
+grain:real-time
+grain:temperature
+grain:magnetisation

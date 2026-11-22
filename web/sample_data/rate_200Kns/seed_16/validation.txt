@@ -1,0 +1,1 @@
+VALID rows=504 cols=8 T=800.0->300.0 t_end=2.52e-09

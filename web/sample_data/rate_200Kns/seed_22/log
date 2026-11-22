@@ -1,0 +1,67 @@
+22-11-2026 [10:47:00] Logfile opened
+22-11-2026 [10:47:00] Executable : vampire-parallel
+22-11-2026 [10:47:00] Host name  : localai:
+22-11-2026 [10:47:00] Directory  : /data/mint_lab/projects/ME_Cooling_LUT/NAM_FePt_Cooling/vampire_output/rate_200Kns/seed_22
+22-11-2026 [10:47:00] Process ID : 64218
+22-11-2026 [10:47:00] Version    : 7.0.0
+22-11-2026 [10:47:00] Githash    : 525bc27ee44c525aee229570f30f3d4c61d54f66
+22-11-2026 [10:47:00] Opening main input file "input".
+22-11-2026 [10:47:00] Parsing system parameters from main input file.
+22-11-2026 [10:47:00] Opening material file "FePtsc6350.mat".
+22-11-2026 [10:47:00] Parsing material file for parameters.
+22-11-2026 [10:47:00] Generating neighbour interactions for a lattice of 5 x 5 x 5 unit cells for neighbour calculation
+22-11-2026 [10:47:00] System decomposed into 1 x 1 x 1 processors for parallel execution
+22-11-2026 [10:47:00] Calculating alloy properties of system
+22-11-2026 [10:47:00] Removed 0 non-magnetic atoms from system
+22-11-2026 [10:47:00] Determining atomic composition:
+22-11-2026 [10:47:00] Material 1 FePt makes up 100 % of all atoms ( 4602 atoms )
+22-11-2026 [10:47:00] Copying halo atoms to other processors...
+22-11-2026 [10:47:00]    Determining CPU ranges in x,y,z
+22-11-2026 [10:47:00]      Completed. Time taken: 8.221e-06 s
+22-11-2026 [10:47:00]    Determining atoms needed by remote CPUs
+22-11-2026 [10:47:00]      Completed. Time taken: 0.000129011 s
+22-11-2026 [10:47:00]    Sharing number of atoms to be sent/received from each CPU
+22-11-2026 [10:47:00]      Completed. Time taken: 1.441e-06 s
+22-11-2026 [10:47:00]    Sending boundary atom data to all relevant CPUs
+22-11-2026 [10:47:00]      Completed. Time taken: 1.1e-06 s
+22-11-2026 [10:47:00] 	done! Total time taken: 0.000172117
+22-11-2026 [10:47:00] Memory required for neighbourlist calculation (each cpu):0 MB
+22-11-2026 [10:47:00] Memory required for neighbourlist calculation (all cpus):0 MB
+22-11-2026 [10:47:00] Allocating memory for supercell array in neighbourlist calculation
+22-11-2026 [10:47:00] 	Allocating memory done
+22-11-2026 [10:47:00] Populating supercell array for neighbourlist calculation...
+22-11-2026 [10:47:00] 	Populating supercell array completed
+22-11-2026 [10:47:00] Memory required for neighbour list (each cpu):0 MB
+22-11-2026 [10:47:00] Memory required for neighbour list (all cpus):0 MB
+22-11-2026 [10:47:00] Generating neighbour list...
+22-11-2026 [10:47:00] 	Neighbour list calculation complete
+22-11-2026 [10:47:00] Deallocating supercell array for neighbour list calculation
+22-11-2026 [10:47:00] 	Supercell array deallocated
+22-11-2026 [10:47:00] Number of core  atoms: 4602
+22-11-2026 [10:47:00] Number of local atoms: 4602
+22-11-2026 [10:47:00] Number of total atoms: 4602
+22-11-2026 [10:47:00] Initialising MPI communications...
+22-11-2026 [10:47:00] 	done! Total time taken: 2.4104e-05
+22-11-2026 [10:47:00] Copying system data to optimised data structures.
+22-11-2026 [10:47:00] Number of atoms generated on rank 0: 4602
+22-11-2026 [10:47:00] Memory required for copying to performance array on rank 0: 0.699504 MB RAM
+22-11-2026 [10:47:00] Identifying surface atoms using global threshold value of 6
+22-11-2026 [10:47:00] 1314 surface atoms found.
+22-11-2026 [10:47:00] Memory required for creation of 1D neighbour list on rank 0: 0.073632 MB RAM
+22-11-2026 [10:47:00] Initialising data structures for exchange calculation.
+22-11-2026 [10:47:00] Unrolled exchange template requires 0.205584MB RAM
+22-11-2026 [10:47:00] Total number of atoms (all CPUs): 4602
+22-11-2026 [10:47:00] Initializing vampire modules
+22-11-2026 [10:47:00] Macrocell size = 10,10,10 Angstroms
+22-11-2026 [10:47:00] Macrocells in x,y,z: 6	6	11
+22-11-2026 [10:47:00] Total number of macrocells: 396
+22-11-2026 [10:47:00] Memory required for macrocell arrays: 0.03168 MB
+22-11-2026 [10:47:00] Number of local macrocells on rank 0: 210
+22-11-2026 [10:47:00] Initialising data structures for anisotropy calculation for 100 materials
+22-11-2026 [10:47:00] Initialising statistics module
+22-11-2026 [10:47:00] Time for initialisation: 0.00881207
+22-11-2026 [10:47:00] Preconditioning spin configuration at T = 800 K ...
+22-11-2026 [10:47:48] Preconditioning completed in 47.4751 s
+22-11-2026 [10:47:48] Starting Simulation with Program Field-Cool...
+22-11-2026 [13:14:03] Simulation run time [s]: 8822.81
+22-11-2026 [13:14:03] Simulation ended gracefully.

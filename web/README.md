@@ -1,4 +1,4 @@
-# ME Cooling Simulator — web version (implemented)
+# Master-Equation Magnetisation Simulator — web version (implemented)
 
 Streamlit port of the desktop app. It reuses the **same physics code**
 (`studio/core/`) with **zero changes**, so its numbers are identical to the

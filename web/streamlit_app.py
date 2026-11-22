@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ME Cooling Simulator - web (Streamlit) entry point.
+"""Master-Equation Magnetisation Simulator - web (Streamlit) entry point.
 
 The physics is imported unchanged from ../studio/core (that package is Qt-free), so the
 web app and the desktop app compute the same numbers from the same code.  Layout and
@@ -25,7 +25,7 @@ import streamlit as st                                            # noqa: E402
 from webapp import context as ctx                                 # noqa: E402
 from webapp import actions, sidebar, main_tab, uploads            # noqa: E402
 
-st.set_page_config(page_title="ME Cooling Simulator", layout="wide")
+st.set_page_config(page_title="Master-Equation Magnetisation Simulator", layout="wide")
 
 
 def main() -> None:
@@ -39,9 +39,10 @@ def main() -> None:
 
     pal = ctx.palette("dark" if st.session_state.get("wid_dark", ctx.DEFAULTS["dark"]) else "light")
 
-    st.title("ME Cooling Simulator")
-    st.caption("Prof. Roy W. Chantrell Master Equation · current lookup table · "
-               "VAMPIRE micro-magnetic runs · the same solver as the desktop app")
+    st.markdown("<div style='font-size:1.3rem;font-weight:700;line-height:1.2;"
+                "text-align:center;white-space:nowrap'>"
+                "Master-Equation Magnetisation Simulator</div>",
+                unsafe_allow_html=True)
 
     s = sidebar.render(pal)
 

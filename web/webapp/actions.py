@@ -17,9 +17,8 @@ from webapp import runner, sidebar, uploads
 
 
 # --------------------------------------------------------------- helpers ----
-def _set_pair(slider_key: str, number_key: str, value: float) -> None:
-    st.session_state[slider_key] = value
-    st.session_state[number_key] = value
+def _set(key: str, value: float) -> None:
+    st.session_state[key] = value
 
 
 def notice(msg: str) -> None:
@@ -65,16 +64,14 @@ def on_rate_bump(delta: float) -> None:
 
 
 def on_d_change(src: str) -> None:
-    """Grain diameter changed (either member of the pair): sync + re-run ME."""
-    val = float(st.session_state[src])
-    _set_pair("wid_d_slider", "wid_d_nm", val)
+    """Grain diameter changed: re-run the ME."""
+    _set("wid_d_nm", float(st.session_state[src]))
     run_me()
 
 
 def on_b_change(src: str) -> None:
-    """Applied field B changed (either member of the pair): sync + re-run ME."""
-    val = float(st.session_state[src])
-    _set_pair("wid_b_slider", "wid_b_nm", val)
+    """Applied field B changed: re-run the ME."""
+    _set("wid_b_nm", float(st.session_state[src]))
     run_me()
 
 
@@ -85,10 +82,10 @@ def on_atoms_from_d() -> None:
 # -------------------------------------------------------------- VAMPIRE ----
 def apply_vampire_settings(cfg) -> None:
     """SimpleWindow._apply_vampire_settings(): copy everything except the ME rate."""
-    _set_pair("wid_d_slider", "wid_d_nm", cfg.d_nm)
+    _set("wid_d_nm", cfg.d_nm)
     st.session_state["wid_t0"] = float(cfg.t_start_K)
     st.session_state["wid_t1"] = float(cfg.t_end_K)
-    _set_pair("wid_b_slider", "wid_b_nm", float(cfg.b_app_T))
+    _set("wid_b_nm", float(cfg.b_app_T))
     st.session_state["wid_damp"] = float(cfg.damping_value)
     st.session_state["wid_atoms"] = int(cfg.n_atoms)
     st.session_state["wid_a"] = cfg.cell_a_m * 1e10
@@ -152,6 +149,12 @@ def load_run(path: str) -> None:
     notice("")
     if synced or not st.session_state.get("me_results"):
         run_me()
+
+
+def on_sample_change() -> None:
+    """Auto-load: picking a bundled sample in the dropdown loads it right away."""
+    if st.session_state.get("wid_sample", "") != "(none - upload a run)":
+        on_load()
 
 
 def on_load() -> None:

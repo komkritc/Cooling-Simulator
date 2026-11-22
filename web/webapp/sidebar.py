@@ -2,8 +2,8 @@
 
 Qt -> Streamlit mapping (see G_web_gui_wireframe.md for the full table):
   QLineEdit ed_rates      -> st.text_input          + the two +/-100 K/ns buttons
-  QDoubleSpinBox sp_d     -> st.slider + st.number_input (linked, auto re-run)
-  QDoubleSpinBox sp_b     -> st.slider + st.number_input (linked, auto re-run)
+  QDoubleSpinBox sp_d     -> st.number_input (auto re-run)
+  QDoubleSpinBox sp_b     -> st.number_input (auto re-run)
   QCheckBox cb_adv        -> st.expander("Show more parameters")
   QComboBox cb_damp       -> st.selectbox
   QCheckBox cb_sg + sp_sgw/sp_sgp -> st.checkbox + two number_inputs (window in K)
@@ -21,11 +21,9 @@ from webapp import actions
 # session_state key -> default, for every widget in the sidebar
 WIDGET_DEFAULTS = {
     "set_rates_text": ctx.DEFAULTS["rates_text"],
-    "wid_d_slider": ctx.DEFAULTS["d_nm"],
     "wid_d_nm": ctx.DEFAULTS["d_nm"],
     "wid_t0": ctx.DEFAULTS["t0"],
     "wid_t1": ctx.DEFAULTS["t1"],
-    "wid_b_slider": ctx.DEFAULTS["b_T"],
     "wid_b_nm": ctx.DEFAULTS["b_T"],
     "wid_damp": ctx.DEFAULTS["damp"],
     "wid_atoms": ctx.DEFAULTS["atoms"],
@@ -83,8 +81,9 @@ def render(pal: dict) -> dict:
                     f"font-size:11px;font-weight:700'>PARAMETERS</div>",
                     unsafe_allow_html=True)
 
-        # cooling rate(s) + the +/-100 buttons
-        rc = st.columns([3.2, 1, 1])
+        # cooling rate(s) + the +/-100 buttons: one aligned row, label style like the
+        # Grain diameter / Applied field boxes
+        rc = st.columns([3.2, 1, 1], vertical_alignment="bottom")
         rates_text = rc[0].text_input("Cooling rate(s) K/ns", key="set_rates_text",
                          help="one or several rates, comma separated (e.g. 100, 500, 1000)")
         rc[1].button("−100", key="b_rm100", on_click=actions.on_rate_bump,
@@ -94,23 +93,19 @@ def render(pal: dict) -> dict:
                      args=(100.0,), use_container_width=True,
                      help="+100 K/ns on every rate in the box (minimum 1), then re-run")
 
-        # grain diameter: slider + exact box, both re-run the ME (desktop debounce)
-        st.slider("Grain diameter", 1.0, 10.0, step=0.1, key="wid_d_slider",
-                  on_change=actions.on_d_change, args=("wid_d_slider",),
-                  help="every change re-runs the ME, like the desktop app")
-        st.number_input("Grain diameter (exact)", 1.0, 10.0, step=0.1, format="%.2f",
-                        key="wid_d_nm", on_change=actions.on_d_change, args=("wid_d_nm",))
+        # grain diameter: exact box, re-runs the ME (desktop debounce)
+        st.number_input("Grain diameter", 1.0, 10.0, step=0.1, format="%.2f",
+                        key="wid_d_nm", on_change=actions.on_d_change, args=("wid_d_nm",),
+                        help="nm; every change re-runs the ME, like the desktop app")
 
         t0 = st.number_input("Start temperature", 1.0, 2000.0, step=50.0, key="wid_t0",
                              format="%.0f", help="K")
         t1 = st.number_input("End temperature", 1.0, 2000.0, step=50.0, key="wid_t1",
                              format="%.0f", help="K - must be below the start temperature")
 
-        st.slider("Applied field B", 0.0, 3.0, step=0.01, key="wid_b_slider",
-                  on_change=actions.on_b_change, args=("wid_b_slider",),
-                  help="tesla; the validated FePt study uses B = 1.00531 T")
-        st.number_input("Applied field B (exact)", 0.0, 50.0, step=0.1, format="%.5f",
-                        key="wid_b_nm", on_change=actions.on_b_change, args=("wid_b_nm",))
+        st.number_input("Applied field B", 0.0, 50.0, step=0.1, format="%.5f",
+                        key="wid_b_nm", on_change=actions.on_b_change, args=("wid_b_nm",),
+                        help="tesla; the validated FePt study uses B = 1.00531 T")
 
         damp = st.number_input("Damping λ", 0.0001, 1.0, step=0.01, format="%.4f",
                                key="wid_damp")
@@ -138,6 +133,12 @@ def render(pal: dict) -> dict:
                                          "λ = α/(1+α²) converts the LL damping to Gilbert")
 
         st.divider()
+        st.button("Run ME", type="primary", key="b_run", use_container_width=True,
+                  on_click=actions.run_me,
+                  help="computes the master-equation cooling curves for every rate in the "
+                       "box (the desktop Run ME button)")
+
+        st.divider()
         st.markdown(f"<div style='color:{pal['BLUE']};letter-spacing:.10em;"
                     f"font-size:11px;font-weight:700'>PLOT OPTIONS</div>",
                     unsafe_allow_html=True)
@@ -160,20 +161,15 @@ def render(pal: dict) -> dict:
                                        help="Savitzky-Golay polynomial order")
 
         st.divider()
-        st.button("Run ME", type="primary", key="b_run", use_container_width=True,
-                  on_click=actions.run_me,
-                  help="computes the master-equation cooling curves for every rate in the "
-                       "box (the desktop Run ME button)")
-
-        st.divider()
         st.markdown(f"<div style='color:{pal['BLUE']};letter-spacing:.10em;"
                     f"font-size:11px;font-weight:700'>VAMPIRE DATA (optional)</div>",
                     unsafe_allow_html=True)
         samples = ctx.sample_run_dirs()
         names = ["(none - upload a run)"] + [ctx.sample_label(d) for d in samples]
         sample = st.selectbox("example run bundled with the app", names, key="wid_sample",
+                              on_change=actions.on_sample_change,
                               help="these are aggregated VAMPIRE output files, not raw "
-                                   "simulation folders")
+                                   "simulation folders; picking one loads it immediately")
         st.caption("browsers cannot pick a folder: zip the run folder, or select its "
                    "*_input.json / .mat / output_seedN.dat files")
         up_mode = st.radio("upload", [".zip of the run folder", "individual files"],

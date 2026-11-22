@@ -72,27 +72,36 @@ def test_bad_rate_shows_the_desktop_message(at):
     assert at.session_state["notice"] == ctx.RATE_MSG
 
 
+def test_sample_dropdown_autoloads(at):
+    """Picking a bundled sample in the dropdown loads it without pressing Load."""
+    names = [ctx.sample_label(d) for d in ctx.sample_run_dirs()]
+    if not names:
+        pytest.skip("no bundled sample data")
+    at.sidebar.selectbox(key="wid_sample").set_value(names[0]).run()
+    assert at.session_state["session"] is not None
+    assert names[0].split()[0] in at.session_state["vampire_info"]
+
+
 def test_temperature_order_is_checked(at):
     at.sidebar.number_input(key="wid_t0").set_value(200.0).run()
     at.sidebar.button(key="b_run").click().run()
     assert at.session_state["notice"] == ctx.T_MSG
 
 
-def test_diameter_pair_stays_in_sync_and_reruns(at):
-    """Editing the slider moves the exact box and re-runs the ME, like the desktop."""
+def test_diameter_change_reruns(at):
+    """Editing the diameter box re-runs the ME, like the desktop."""
     at.sidebar.button(key="b_run").click().run()
     before = at.session_state["me_results"][0][2][-1]
-    at.sidebar.slider(key="wid_d_slider").set_value(5.0).run()
+    at.sidebar.number_input(key="wid_d_nm").set_value(5.0).run()
     assert at.session_state["wid_d_nm"] == 5.0
     after = at.session_state["me_results"][0][2][-1]
     assert float(after) != float(before)
     assert at.session_state["run_params"]["d_nm"] == 5.0
 
 
-def test_field_pair_stays_in_sync_and_reruns(at):
+def test_field_change_reruns(at):
     at.sidebar.button(key="b_run").click().run()
     at.sidebar.number_input(key="wid_b_nm").set_value(0.5).run()
-    assert at.session_state["wid_b_slider"] == 0.5
     assert at.session_state["run_params"]["b_app_T"] == 0.5
 
 

@@ -116,10 +116,15 @@ T_MSG = "Start temperature must be above the end temperature"
 
 
 def sample_run_dirs() -> list[str]:
-    """Bundled example run folders ordered by rate; [] when none are present."""
+    """Bundled example run folders ordered by rate; [] when none are present.
+
+    Two layouts are supported:
+      sample_data/vampire_damp0p05_D4nm/cooling_T800/runs/rate_*Kns  (old)
+      sample_data/rate_*Kns                                          (new)
+    """
     runs = SAMPLE_ROOT / "cooling_T800" / "runs"
     if not runs.is_dir():
-        return []
+        runs = SAMPLE_DATA
     out = [str(d) for d in runs.iterdir() if d.is_dir() and d.name.startswith("rate_")]
     return sorted(out, key=lambda p: float(p.rsplit("rate_", 1)[1][:-len("Kns")]))
 

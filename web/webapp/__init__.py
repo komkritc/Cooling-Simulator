@@ -1,4 +1,4 @@
-"""ME Cooling Simulator — Streamlit web app.
+"""Master-Equation Magnetisation Simulator — Streamlit web app.
 
 UI layer only.  All physics comes from the untouched, validated `studio.core`
 package (frozen Prof. Roy W. Chantrell Master Equation + LUT material surrogate),

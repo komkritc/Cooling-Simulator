@@ -8,6 +8,7 @@ Rules (plan §A.5):
 """
 from __future__ import annotations
 
+import math
 import re
 
 from .types import ParameterRecord, ParameterTable, Source, Status
@@ -40,12 +41,26 @@ def parse_log_atoms(log_path: str) -> tuple[int | None, dict]:
 VAMPIRE_DEFAULT_UNIT = {"cooling_time": "s", "B_app": "T",
                         "cell_a": "A", "cell_b": "A", "cell_c": "A"}
 
+# Length-valued parameters.  Decks may declare them in !A or !nm (the validated
+# decks used angstrom; newer decks often use nm).  They are all normalised to
+# angstrom at import so cross-checks (validator G1/G2/M-RF) compare like units.
+LENGTH_KEYS = {"grain_diameter", "grain_height", "system_size_x",
+               "system_size_y", "cell_a", "cell_b", "cell_c"}
+TO_ANGSTROM = {"A": 1.0, "nm": 10.0, "m": 1e10}
+
 def _rec_from_deck(d, key: str) -> ParameterRecord:
     st = Status.EXTRACTED if d.unit else Status.ASSUMED
-    return ParameterRecord(key=key, value=d.value,
-                           unit=d.unit or VAMPIRE_DEFAULT_UNIT.get(key, "unit:assumed"),
-                           status=st,
-                           sources=[Source(d.file, d.line, d.raw)])
+    val = d.value
+    unit = d.unit or VAMPIRE_DEFAULT_UNIT.get(key, "unit:assumed")
+    note = ""
+    if isinstance(val, (int, float)) and key in LENGTH_KEYS and unit in TO_ANGSTROM:
+        if unit != "A":
+            val = val * TO_ANGSTROM[unit]
+            note = f"imported as {d.value:g} [{unit}], normalised to {val:g} [A]"
+        unit = "A"
+    return ParameterRecord(key=key, value=val,
+                           unit=unit, status=st,
+                           sources=[Source(d.file, d.line, d.raw)], note=note)
 
 
 def _rec_from_mat(e, key: str) -> ParameterRecord:
@@ -138,4 +153,28 @@ def extract(deck: DeckParseResult, mat: MatParseResult | None,
 
     t.unrecognised = [Source(d.file, d.line, d.raw) for d in deck.unknown] \
         + ([Source(e.file, e.line, e.raw) for e in mat.unknown] if mat else [])
+    _quantise_grain_to_grid(t)
     return t
+
+
+def _quantise_grain_to_grid(t: ParameterTable) -> None:
+    """VAMPIRE builds grains from whole unit cells, not from the declared size.
+
+    A 4 nm particle-size on a 2.72 A grid really spans 15 cells = 40.8 A, and a
+    10 nm height spans 26 x 3.85 A = 100.1 A (the validated old decks carried
+    40.8/100.1 explicitly for exactly this reason - the log shows the same
+    4602 atoms for both decks).  Store the grid-quantised dimensions VAMPIRE
+    actually simulated, and log the correction in the record note.
+    """
+    a, c = t.value("cell_a"), t.value("cell_c")
+    for key, step in (("grain_diameter", a), ("grain_height", c)):
+        r = t.get(key)
+        if r is None or not isinstance(r.value, (int, float)) or not step:
+            continue
+        n = math.ceil(round(r.value / step, 9))
+        eff = round(n * step, 10)
+        if abs(eff - r.value) > 1e-9:
+            note = (f"deck says {r.value:g} A; VAMPIRE grain spans {n} whole "
+                    f"cells = {eff:.2f} A")
+            r.note = f"{r.note}; {note}" if r.note else note
+            r.value = eff

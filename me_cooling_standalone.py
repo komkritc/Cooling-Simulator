@@ -31,7 +31,7 @@ HERE = Path(__file__).resolve().parent
 # =====================================================================
 RATES_K_PER_NS = [200]                        # cooling rate(s), K/ns
 T_START, T_END, DTEMP = 800, 300, 1           # K
-D_NM = 4                                      # grain diameter handed to the surrogate, nm
+D_NM = 4.08                                   # grain diameter handed to the surrogate, nm
 N_ATOMS = 4602                                # atoms in the grain (geometry calibration)
 A_CELL, C_CELL = 2.72e-10, 3.85e-10           # unit cell, m
 MU_B = 9.2740100783e-24                       # J/T

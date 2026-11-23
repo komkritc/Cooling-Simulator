@@ -4,3 +4,4 @@ __pycache__/
 .venv
 _attic_web_psw/
 web/data/
+tests/_qc_tmp/

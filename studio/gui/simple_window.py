@@ -17,14 +17,15 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as Canvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (QTabWidget, QScrollArea, QFrame, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog,
-                               QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-                               QMainWindow, QMessageBox, QPushButton, QSpinBox,
+                               QFormLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+                               QMainWindow, QMessageBox, QPushButton, QSpinBox, QTableWidget, QTableWidgetItem,
                                QVBoxLayout, QWidget)
 
 from ..core.mapping_engine import me_inputs_for_solver
 from ..core.me_solver import MESolver
 from ..core.lut_material import LutMaterial, find_lut
 from ..core.types import MEConfig
+from ..core import seed_qc
 from . import theme
 
 STANDALONE = Path(__file__).resolve().parents[2]
@@ -171,6 +172,56 @@ class SimpleWindow(QMainWindow):
         self.cb_vparams.setChecked(str(self.settings.value("import_vampire", "true")).lower() == "true")
         self.cb_vparams.toggled.connect(self._import_toggled)
         self.lbl_v = QLabel(""); self.lbl_v.setWordWrap(True); self.lbl_v.setStyleSheet(f"color:{theme.FG_DIM}")
+
+        # ---- representative seed selection (Auto Seed Selection) ----
+        self._qc = None                      # seed_qc.DatasetQC for the loaded dataset
+        self._stats_cache: dict = {}
+        self._stats_cache_run = None
+        self._rep_worker = None
+        self.cb_auto = QCheckBox("Auto Seed Selection")
+        self.cb_auto.setToolTip(
+            "Representative reduction of the VAMPIRE seed ensemble, per cooling rate.\n"
+            "ON:  scan every seed file of every rate in the dataset, run technical validation,\n"
+            "     flag statistical anomalies (kept, not discarded), then pick up to the target\n"
+            "     number of seeds that reproduce the full valid ensemble (fixed RNG seed, so the\n"
+            "     same choice every time).  The count is raised automatically if the target count\n"
+            "     does not reproduce the ensemble statistics.\n"
+            "OFF: every technically valid seed is used - no reduction.\n"
+            "Technical validation always runs, in both modes: corrupt seeds never enter the analysis.")
+        self.cb_auto.setChecked(str(self.settings.value("auto_seed", "true")).lower() == "true")
+        self.sp_nseed = QSpinBox(); self.sp_nseed.setRange(1, 2000)
+        self.sp_nseed.setValue(int(self.settings.value("seed_target", 50)))
+        self.sp_nseed.setSuffix(" seeds/rate")
+        self.sp_nseed.setToolTip("Target number of representative seeds per cooling rate (default 50)")
+        row_seed = QHBoxLayout(); row_seed.setContentsMargins(0, 0, 0, 0)
+        row_seed.addWidget(self.cb_auto, 1); row_seed.addWidget(self.sp_nseed)
+        self.cb_traces_all = QCheckBox("Show all individual trajectories")
+        self.cb_traces_all.setChecked(str(self.settings.value("traces_all", "false")).lower() == "true")
+        self.cb_traces_sel = QCheckBox("Show selected trajectories")
+        self.cb_traces_sel.setChecked(str(self.settings.value("traces_sel", "true")).lower() == "true")
+        self.cb_sem = QCheckBox("\u00b12 SEM band")
+        self.cb_sem.setChecked(str(self.settings.value("sem_band", "true")).lower() == "true")
+        self.cb_sd = QCheckBox("\u00b1SD band")
+        self.cb_sd.setChecked(str(self.settings.value("sd_band", "false")).lower() == "true")
+        self.tbl_seed = QTableWidget(0, 4)
+        self.tbl_seed.setHorizontalHeaderLabels(["Cooling rate", "Valid", "Selected", "Rejected"])
+        self.tbl_seed.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.tbl_seed.setSelectionMode(QTableWidget.NoSelection)
+        self.tbl_seed.setAlternatingRowColors(True)
+        self.tbl_seed.verticalHeader().setVisible(False)
+        self.tbl_seed.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_seed.setMaximumHeight(190)
+        self.tbl_seed.setVisible(False)
+        self.lbl_seed = QLabel(""); self.lbl_seed.setWordWrap(True)
+        self.lbl_seed.setStyleSheet(f"color:{theme.FG_DIM}")
+        self.lbl_seed.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_seed.setVisible(False)
+        self.cb_auto.toggled.connect(self._qc_changed)
+        self.sp_nseed.valueChanged.connect(self._qc_changed)
+        for w_ in (self.cb_traces_all, self.cb_traces_sel, self.cb_sem, self.cb_sd):
+            w_.toggled.connect(self._disp_changed)
+        self._qc_timer = QTimer(self); self._qc_timer.setSingleShot(True); self._qc_timer.setInterval(450)
+        self._qc_timer.timeout.connect(self._qc_reselect)
         self.bt_png = QPushButton("Save PNG"); self.bt_png.clicked.connect(self.save_png)
         self.bt_csv = QPushButton("Save CSV"); self.bt_csv.clicked.connect(self.save_csv)
         self.bt_py = QPushButton("Export .py"); self.bt_py.clicked.connect(self.export_py)
@@ -193,6 +244,10 @@ class SimpleWindow(QMainWindow):
         left.addWidget(QLabel("VAMPIRE data (optional)"))
         left.addWidget(self.ed_vpath); left.addLayout(row_v)
         left.addWidget(self.cb_vparams); left.addWidget(self.lbl_v)
+        left.addWidget(self.cb_traces_all); left.addWidget(self.cb_traces_sel)
+        row_disp = QHBoxLayout(); row_disp.addWidget(self.cb_sem); row_disp.addWidget(self.cb_sd)
+        left.addLayout(row_disp)
+        left.addLayout(row_seed); left.addWidget(self.tbl_seed); left.addWidget(self.lbl_seed)
         left.addWidget(self.lbl_res)
         self.card = QFrame(); self.card.setObjectName("ratioCard")
         cl = QVBoxLayout(self.card); cl.setContentsMargins(8, 6, 8, 6); cl.setSpacing(3)
@@ -488,11 +543,143 @@ class SimpleWindow(QMainWindow):
         self.bt_run.setEnabled(True); self.statusBar().showMessage("Done")
         self._plot()
 
-    def _vampire_stats(self):
+    def _qc_rate(self):
+        """The QC row of the currently loaded rate, or None."""
+        if self._qc is None or self.session is None:
+            return None
+        return self._qc.for_rate(self.session.rate_deck)
+
+    def _active_seeds(self, all_valid: bool = False) -> list:
+        """Seeds the analysis uses: all valid ones, or the representative subset when Auto is on.
+
+        The session already holds ONLY technically valid seeds (a seed that failed validation
+        is never loaded), so this filter is about the representative reduction, not validation.
+        """
+        if self.session is None:
+            return []
+        rq = None if all_valid else self._qc_rate()
+        if rq is None or not self.cb_auto.isChecked():
+            return self.session.seeds
+        chosen = set(rq.selected)
+        return [s for s in self.session.seeds if s.seed in chosen]
+
+    def _vampire_stats(self, all_valid: bool = False):
+        """compute_stats() over the active (or, for the trace overlay, all valid) seeds."""
         if self.session is None or not self.session.seeds:
             return None
-        from ..core.statistics import compute_stats
-        return compute_stats(self.session.seeds)
+        seeds = self._active_seeds(all_valid=all_valid)
+        if not seeds:
+            return None
+        key = (self.session.run_dir, all_valid, tuple(s.seed for s in seeds))
+        st = self._stats_cache.get(key)
+        if st is None:
+            if self._stats_cache_run != self.session.run_dir:      # new dataset: drop old curves
+                self._stats_cache.clear(); self._stats_cache_run = self.session.run_dir
+            from ..core.statistics import compute_stats
+            st = compute_stats(seeds)
+            self._stats_cache[key] = st
+        return st
+
+    # ---------------- seed QC and representative selection ----------------
+    def _disp_changed(self, _=None):
+        self.settings.setValue("traces_all", "true" if self.cb_traces_all.isChecked() else "false")
+        self.settings.setValue("traces_sel", "true" if self.cb_traces_sel.isChecked() else "false")
+        self.settings.setValue("sem_band", "true" if self.cb_sem.isChecked() else "false")
+        self.settings.setValue("sd_band", "true" if self.cb_sd.isChecked() else "false")
+        self._plot()
+
+    def _qc_changed(self, _=None):
+        """Auto toggle or target change: store, then re-apply the selection (debounced)."""
+        self.settings.setValue("auto_seed", "true" if self.cb_auto.isChecked() else "false")
+        self.settings.setValue("seed_target", int(self.sp_nseed.value()))
+        if self._qc is None:
+            return                                       # no dataset loaded: nothing to reselect
+        self._qc_timer.start()
+
+    def _qc_reselect(self):
+        """Re-apply the representative selection for the current target / Auto state."""
+        if self._qc is None:
+            return
+        self._qc.auto = self.cb_auto.isChecked()
+        seed_qc.reselect(self._qc, self.sp_nseed.value(), self.cb_auto.isChecked())
+        self._fill_seed_table()
+        self._plot()
+        self._qc_reports()
+
+    def _fill_seed_table(self, qc_err=None):
+        dq = self._qc
+        show = dq is not None or qc_err is not None
+        self.tbl_seed.setVisible(dq is not None)
+        self.lbl_seed.setVisible(show)
+        if dq is None:
+            if qc_err:
+                self.lbl_seed.setText(f"Seed QC could not run on this dataset: {qc_err}")
+            return
+        rows = [[f"{rq.rate:g} K/ns", str(len(rq.valid)),
+                 ("all" if not self.cb_auto.isChecked() else str(len(rq.selected))),
+                 str(len(rq.rejected)), rq] for rq in dq.rates]
+        rows += [[f"{rate:g} K/ns", "-", "-", "-", None] for rate, _, _ in dq.skipped]
+        self.tbl_seed.setRowCount(len(rows))
+        for i, (name, valid, sel, rej, rq) in enumerate(rows):
+            for c, text in enumerate((name, valid, sel, rej)):
+                it = QTableWidgetItem(text)
+                if c:
+                    it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                if rq is not None:
+                    it.setToolTip(
+                        f"{rq.run_dir}\n"
+                        f"seeds done {len(rq.seeds)}, valid {len(rq.valid)}, "
+                        f"flagged anomalies {len(rq.flagged)} (kept), incomplete {rq.incomplete}, "
+                        f"rejected {len(rq.rejected)}\n"
+                        f"selected {len(rq.selected)} of target {rq.target} "
+                        f"({'count raised' if rq.escalated else 'as targeted'})\n"
+                        f"selected-vs-full error: mean {rq.err[0]:.3f}, SD {rq.err[1]*100:.0f}%, "
+                        f"final-window {rq.err[2]:.3f}")
+                else:
+                    why = next((w for r, _, w in dq.skipped if w and f"{r:g}" in name), "")
+                    it.setToolTip(f"no usable seeds: {why}" if why else "no usable seeds in this folder")
+                self.tbl_seed.setItem(i, c, it)
+        self._qc_summary(qc_err)
+
+    def _qc_summary(self, qc_err=None):
+        dq = self._qc
+        if dq is None:
+            return
+        auto = self.cb_auto.isChecked()
+        used = sum(len(rq.selected) if auto else len(rq.valid) for rq in dq.rates)
+        valid = sum(len(rq.valid) for rq in dq.rates)
+        flagged = sum(len(rq.flagged) for rq in dq.rates)
+        rejected = sum(len(rq.rejected) for rq in dq.rates)
+        incomplete = sum(rq.incomplete for rq in dq.rates)
+        head = (f"Auto Seed Selection: {used} of {valid} valid seeds used "
+                + (f"(representative subset, target {self.sp_nseed.value()}/rate, "
+                   f"fixed RNG {dq.rng_seed})" if auto else "OFF - every valid seed is used"))
+        lines = [head,
+                 f"flagged anomalies {flagged} (kept in the ensemble, shown as diagnostics)",
+                 f"technical rejects {rejected}, incomplete seed folders {incomplete}"]
+        esc = [f"{rq.rate:g} K/ns" for rq in dq.rates if rq.escalated]
+        if esc:
+            lines.append("seed count raised to reproduce the ensemble at: " + ", ".join(esc))
+        if dq.skipped:
+            lines.append("no usable seeds at: " + ", ".join(f"{r:g} K/ns" for r, _, _ in dq.skipped))
+        lines.append(f"reports: {dq.report_dir()}")
+        self.lbl_seed.setText(("\n" + "\n".join(lines)) if not qc_err
+                              else f"Seed QC note: {qc_err}\n" + "\n".join(lines))
+
+    def _qc_reports(self):
+        """(Re)write the QC report files off the UI thread."""
+        dq = self._qc
+        if dq is None or (self._rep_worker is not None and self._rep_worker.isRunning()):
+            return
+        self._rep_worker = Worker(lambda: seed_qc.write_reports(dq), self)
+        self._rep_worker.ok.connect(self._qc_report_done)
+        self._rep_worker.err.connect(lambda m: self.statusBar().showMessage(f"QC report failed: {m}"))
+        self._rep_worker.start()
+
+    def _qc_report_done(self, paths):
+        self.statusBar().showMessage(
+            f"QC reports written ({len(paths)} files): {self._qc.report_dir()}")
+        self._qc_summary()
 
     @staticmethod
     def _vampire_final(vs, T_end):
@@ -571,8 +758,12 @@ class SimpleWindow(QMainWindow):
         elif vres[0] is None:
             body = f"<br><span style='color:{dim}'>{vres[3]}</span>"
         else:
+            rq = self._qc_rate()
+            sub = (f"{vs.n} selected of {len(rq.valid)} valid seeds"
+                   if rq is not None and self.cb_auto.isChecked() and len(rq.selected) < len(rq.valid)
+                   else f"{vs.n} seeds")
             body = (f"<br>{self.session.rate_deck:g} K/ns &nbsp;<b style='color:{amber}'>{vres[0]:.4f}</b>"
-                    f" <span style='color:{dim}'>({vs.n} seeds)</span>")
+                    f" <span style='color:{dim}'>({sub})</span>")
         self.card_vm.setText(f"<span style='color:{amber}'><b>\u25a0 VAMPIRE</b></span> "
                              f"<span style='color:{dim}'>median m / ms</span>{body}")
         self.card_vm.setStyleSheet(f"border-left:3px solid {amber}; padding-left:6px;")
@@ -606,14 +797,32 @@ class SimpleWindow(QMainWindow):
         Ts = []
         if vs is not None:
             vcol = COLORS[0]
+            rq = self._qc_rate()
+            sub = (f"{vs.n} selected of {len(rq.valid)} valid seeds"
+                   if rq is not None and self.cb_auto.isChecked() and len(rq.selected) < len(rq.valid)
+                   else f"{vs.n} seeds")
             # one seed -> sem is NaN (ddof=1); show no error band instead of crashing the plot
             vm = self._smooth(vs.T, vs.mean)
             vsem = self._smooth(vs.T, np.nan_to_num(np.asarray(vs.sem, float), nan=0.0))
-            self.ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
+            if self.cb_traces_all.isChecked():
+                vall = self._vampire_stats(all_valid=True)
+                if vall is not None:
+                    for row in vall.mz_per_seed:
+                        self.ax.plot(vall.T, row, color=theme.FG_DIM, lw=0.6, alpha=0.18, zorder=1)
+            if self.cb_traces_sel.isChecked():
+                for row in vs.mz_per_seed:
+                    self.ax.plot(vs.T, row, color=vcol, lw=0.8, alpha=0.32, zorder=2)
+            if self.cb_sd.isChecked():
+                vsd = vsem * math.sqrt(max(vs.n, 1))
+                self.ax.fill_between(vs.T, vm - vsd, vm + vsd, color=vcol, alpha=0.10, lw=0)
+            if self.cb_sem.isChecked():
+                self.ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
             self.ax.plot(vs.T, vm, color=vcol, lw=2.2,
-                         label=f"VAMPIRE {vrate:g} K/ns (n={vs.n}, \u00b12 s.e.m.)")
+                         label=f"VAMPIRE {vrate:g} K/ns (n={sub}, \u00b12 s.e.m.)")
             Ts += [vs.T.max(), vs.T.min()]
-            lines.append(f"VAMPIRE {vrate:g} K/ns: {vs.n} seeds")
+            lines.append(f"VAMPIRE {vrate:g} K/ns: {sub}"
+                         + (f"; {self._vampire_stats(all_valid=True).n} valid trajectories shown (grey)"
+                            if self.cb_traces_all.isChecked() else ""))
         for i, (rate, T, m, P, ms, Tc) in enumerate(self.results):
             col = COLORS[(i + (vs is not None)) % len(COLORS)]
             m_s = self._smooth(T, m)
@@ -684,8 +893,20 @@ class SimpleWindow(QMainWindow):
 
         def job():
             from ..core.session import AnalysisSession
-            s = AnalysisSession(self._resolve(d), snap_diameter=False); s.load_seeds()   # use the deck's real diameter
-            return s
+            s = AnalysisSession(self._resolve(d), snap_diameter=False)   # deck's real diameter
+            # Technical validation of every seed of every rate always runs, in both Auto modes.
+            dq, qc_err = None, None
+            try:
+                dq = seed_qc.scan_dataset(seed_qc.dataset_dir_of(s.run_dir),
+                                          target=self.sp_nseed.value())
+                dq.auto = self.cb_auto.isChecked()
+            except Exception as e:                                       # QC must not block the load
+                qc_err = f"{type(e).__name__}: {e}"
+            rq = dq.for_rate(s.rate_deck) if dq is not None else None
+            # only technically valid seeds of this rate enter the session; the representative
+            # subset is applied at statistics level, so the Auto checkbox is instant
+            s.load_seeds(only=sorted(rq.valid) if rq is not None else None)
+            return s, dq, qc_err
 
         self._worker = Worker(job, self)
         self._worker.ok.connect(self._vampire_loaded); self._worker.err.connect(self._vampire_failed)
@@ -731,10 +952,15 @@ class SimpleWindow(QMainWindow):
         self.statusBar().showMessage("Error")
         QMessageBox.critical(self, "Could not load VAMPIRE run", msg)
 
-    def _vampire_loaded(self, s):
+    def _vampire_loaded(self, res):
+        s, dq, qc_err = res
         self.bt_load.setEnabled(True); self.bt_browse.setEnabled(True)
         self.statusBar().showMessage("VAMPIRE run loaded")
         self.session = s
+        self._qc = dq
+        self._fill_seed_table(qc_err)
+        if dq is not None:
+            self._qc_reports()
         self.settings.setValue("vampire_path", self.ed_vpath.text().strip())
         self.bt_clear.setVisible(True)
         rate_txt = f"{s.rate_deck:g} K/ns" if s.rate_deck else "rate unknown"
@@ -748,7 +974,12 @@ class SimpleWindow(QMainWindow):
             self.ed_rates.setText(f"{s.rate_deck:g}"); synced = True
         if s.cfg is not None:
             note = f"\nGrain D = {s.rf_d:g} nm from the deck (LUT interpolated), N = {s.cfg.n_atoms} atoms" + note
-        self.lbl_v.setText(f"{s.run_dir}\n{len(s.seeds)} seeds, {rate_txt}. "
+        rq = self._qc_rate()
+        vnote = ""
+        if rq is not None:
+            vnote = (f" - {len(rq.rejected)} seed(s) failed technical validation"
+                     + (f", {len(rq.flagged)} anomaly flag(s) kept" if rq.flagged else ""))
+        self.lbl_v.setText(f"{s.run_dir}\n{len(s.seeds)} valid seeds, {rate_txt}{vnote}. "
                            + ("ME rate set to match (you can change it freely)." if synced
                               else "ME rate is set separately above.") + note)
         self.lbl_v.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -763,6 +994,8 @@ class SimpleWindow(QMainWindow):
 
     def clear_vampire(self):
         self.session = None; self.bt_clear.setVisible(False); self.lbl_v.setText("")
+        self._qc = None
+        self.tbl_seed.setVisible(False); self.lbl_seed.setVisible(False); self.lbl_seed.setText("")
         if self.results:
             self._plot()
         self._update_card()

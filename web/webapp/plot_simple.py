@@ -56,7 +56,7 @@ def param_panels(s, results, session, pal):
                                      ("\u03bc / \u03b3rel", f"{s['mu_mub']:g} \u03bcB / {s['gamma_rel']:g}")]),
     ]
     sm = f"SG {s['sg_win']:g} K, order {s['sg_poly']}" if s["sg_on"] else "off"
-    vs = runner.vampire_stats(session)
+    vs = runner.vampire_stats(session, s)     # the seeds the plotted band is built from
     if vs is not None:
         name = os.path.basename(session.run_dir)
         name = name if len(name) <= 18 else name[:17] + "\u2026"
@@ -117,20 +117,34 @@ def draw(s, results, session, pal):
     style_axes(ax, pal, s["grid"])
 
     lines: list[str] = []
-    vs = runner.vampire_stats(session)
+    vs = runner.vampire_stats(session, s)
     vrate = session.rate_deck if vs is not None else None
     Ts: list[float] = []
 
     if vs is not None:
         vcol = COLORS[0]
+        rq = (runner.qc_for(session, s["seed_target"]) if s["seed_auto"] else None)
+        reduced = rq is not None and len(rq.selected) < len(rq.valid)
+        sub = (f"{vs.n} selected of {len(rq.valid)} valid seeds" if reduced
+               else f"{vs.n} seeds")
         vm = runner.smooth(s, vs.T, vs.mean)
         # one seed -> sem is NaN (ddof=1); show no error band instead of crashing the plot
         vsem = runner.smooth(s, vs.T, np.nan_to_num(np.asarray(vs.sem, float), nan=0.0))
-        ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
+        if s["traces_all"]:
+            vall = runner.vampire_stats(session)          # every valid seed, no reduction
+            for row in vall.mz_per_seed:
+                ax.plot(vall.T, row, color=pal["FG_DIM"], lw=0.6, alpha=0.18, zorder=1)
+            if reduced:                                   # the seeds the analysis uses
+                for row in vs.mz_per_seed:
+                    ax.plot(vs.T, row, color=vcol, lw=0.8, alpha=0.32, zorder=2)
+        if s["sem_band"]:
+            ax.fill_between(vs.T, vm - 2 * vsem, vm + 2 * vsem, color=vcol, alpha=0.25, lw=0)
         ax.plot(vs.T, vm, color=vcol, lw=2.2,
-                label=f"VAMPIRE {vrate:g} K/ns (n={vs.n}, \u00b12 s.e.m.)")
+                label=f"VAMPIRE {vrate:g} K/ns (n={sub}, \u00b12 s.e.m.)")
         Ts += [float(vs.T.max()), float(vs.T.min())]
-        lines.append(f"VAMPIRE {vrate:g} K/ns: {vs.n} seeds")
+        lines.append(f"VAMPIRE {vrate:g} K/ns: {sub}"
+                     + (f"; {runner.vampire_stats(session).n} valid trajectories shown (grey)"
+                        if s["traces_all"] else ""))
 
     for i, (rate, T, m, P, ms, Tc) in enumerate(results):
         col = COLORS[(i + (vs is not None)) % len(COLORS)]

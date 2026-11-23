@@ -33,7 +33,7 @@ def ratio_card(pal, s, results, session, run_params) -> None:
     T_end = results[0][1][-1] if results else s["t1"]
     st.markdown(f"#### Final Magnetisation Ratio ({T_end:g} K)")
     me_col, v_col, st_col = st.columns([1, 1, 1.4])
-    vs = runner.vampire_stats(session)
+    vs = runner.vampire_stats(session, s)
 
     with me_col:
         st.markdown(f"<span style='color:{pal['BLUE']}'><b>\u25a0 ME</b></span> "
@@ -58,8 +58,11 @@ def ratio_card(pal, s, results, session, run_params) -> None:
             st.markdown(f"<span style='color:{pal['FG_DIM']}'>{html.escape(vres[3])}</span>",
                         unsafe_allow_html=True)
         else:
+            n_valid = len(session.seeds)
+            n_txt = (f"{vs.n} of {n_valid} valid seeds" if vs.n != n_valid
+                     else f"{vs.n} seeds")
             st.markdown(f"{session.rate_deck:g} K/ns &nbsp; **{vres[0]:.4f}** "
-                        f"<span style='color:{pal['FG_DIM']}'>({vs.n} seeds)</span>",
+                        f"<span style='color:{pal['FG_DIM']}'>{n_txt}</span>",
                         unsafe_allow_html=True)
 
     with st_col:
@@ -95,7 +98,10 @@ def ratio_card(pal, s, results, session, run_params) -> None:
 def vcard(pal, session, s, results, run_params) -> None:
     info = session.seed_info()
     rate = f"{session.rate_deck:g} K/ns" if session.rate_deck else "rate unknown"
-    head = (f"**VAMPIRE run:** `{session.run_dir.split('/')[-1]}` \u00b7 {info['n_loaded']} seeds "
+    used = len(runner.active_seeds(session, s))
+    seeds_txt = (f"{info['n_loaded']} seeds" if used == info["n_loaded"]
+                 else f"{used} of {info['n_loaded']} seeds used")
+    head = (f"**VAMPIRE run:** `{session.run_dir.split('/')[-1]}` \u00b7 {seeds_txt} "
             f"\u00b7 {rate}" + (" \u00b7 rate snapped to the registered model diameter"
                                 if session.rf_d_snapped else ""))
     st.markdown(head)

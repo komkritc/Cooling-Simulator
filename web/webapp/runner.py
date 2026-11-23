@@ -8,6 +8,7 @@ the desktop app produce identical numbers and identical messages.
 from __future__ import annotations
 
 import math
+import os
 
 import numpy as np
 
@@ -15,6 +16,8 @@ from studio.core.mapping_engine import me_inputs_for_solver
 from studio.core.me_solver import MESolver
 from studio.core.lut_material import LutMaterial, find_lut
 from studio.core.types import MEConfig
+
+from . import context as ctx
 
 
 # ------------------------------------------------------------------ model ----
@@ -95,11 +98,93 @@ def compare_vampire(session, s: dict, rate: float):
 
 
 # ---------------------------------------------------------------- VAMPIRE ----
-def vampire_stats(session):
-    if session is None or not getattr(session, "seeds", None):
+# Representative seed selection, mirroring SimpleWindow._qc_rate/_active_seeds:
+# technical validation always runs (a corrupt seed never enters the analysis), and
+# Auto Seed Selection reduces the valid pool to a subset that reproduces it.
+_QC: dict[str, tuple[tuple, object]] = {}        # run_dir -> (folder stamp, RateQC)
+_STATS: dict[tuple, object] = {}                 # (run_dir, seed ids) -> compute_stats()
+
+
+def _folder_stamp(run_dir: str) -> tuple:
+    """(seed folder, DONE mtime) for every seed: the identity of the run's contents."""
+    try:
+        names = sorted(n for n in os.listdir(run_dir) if n.startswith("seed_"))
+    except OSError:
+        return ()
+    out = []
+    for n in names:
+        done = os.path.join(run_dir, n, "DONE")
+        try:
+            out.append((n, os.path.getmtime(done)))
+        except OSError:
+            out.append((n, None))
+    return tuple(out)
+
+
+def qc_for(session, target: int):
+    """seed_qc.RateQC for the loaded run, or None when no rate/seed folder is usable.
+
+    The web app loads a single rate folder rather than a dataset, so this calls
+    scan_rate/select_rate directly - the same functions, fixed RNG seed and tolerance
+    logic the desktop scan runs, so the same folder and target give the same seeds.
+    The scan (and its curves) are cached per folder contents; changing the target only
+    re-runs the selection, never the disk read.
+    """
+    from studio.core import seed_qc
+
+    run_dir = session.run_dir
+    rate = session.rate_deck or seed_qc.rate_of_dir(os.path.basename(run_dir.rstrip("/\\")))
+    if not rate:
         return None
-    from studio.core.statistics import compute_stats
-    return compute_stats(session.seeds)
+    stamp = _folder_stamp(run_dir)
+    hit = _QC.get(run_dir)
+    rq = hit[1] if hit and hit[0] == stamp else None
+    if rq is None:
+        try:
+            rq = seed_qc.scan_rate(rate, run_dir)
+        except (FileNotFoundError, ValueError, IndexError):
+            return None
+        if len(_QC) > 8:
+            _QC.clear()
+        _QC[run_dir] = (stamp, rq)
+    target = max(1, int(target))
+    if rq.target != target:
+        seed_qc.select_rate(rq, target)
+    return rq
+
+
+def active_seeds(session, s: dict):
+    """Seeds the analysis uses: every valid one, or the representative subset when Auto is on."""
+    if session is None or not getattr(session, "seeds", None):
+        return []
+    if not s.get("seed_auto", ctx.DEFAULTS["seed_auto"]):
+        return list(session.seeds)
+    rq = qc_for(session, s.get("seed_target", ctx.DEFAULTS["seed_target"]))
+    if rq is None or not rq.selected:
+        return list(session.seeds)
+    chosen = set(rq.selected)
+    subset = [x for x in session.seeds if x.seed in chosen]
+    return subset or list(session.seeds)
+
+
+def vampire_stats(session, s: dict | None = None):
+    """compute_stats() over the active seeds; without `s`, over every seed loaded.
+
+    The `s`-less form is the un-reduced ensemble, used for the grey trajectory overlay.
+    """
+    seeds = active_seeds(session, s) if s is not None else (
+        list(session.seeds) if session is not None and getattr(session, "seeds", None) else [])
+    if not seeds:
+        return None
+    key = (session.run_dir, tuple(x.seed for x in seeds))
+    stt = _STATS.get(key)
+    if stt is None:
+        from studio.core.statistics import compute_stats
+        if len(_STATS) > 16:
+            _STATS.clear()
+        stt = compute_stats(seeds)
+        _STATS[key] = stt
+    return stt
 
 
 def vampire_final(vs, T_end):

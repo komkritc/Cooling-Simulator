@@ -84,6 +84,32 @@ modified.
   (warnings: unit-assumed deck fields, RF D 4.0 vs deck 4.08 nm snapped,
   log `dampconstant=0.1` vs mat 0.05 — validated code used 0.05, kept).
 
+### Seed QC and representative seed selection (`fdf14bc`)
+
+`studio/core/seed_qc.py` (Qt-free, shared by both apps) validates every
+`output_seed*.dat` in each `rate_*Kns` folder of a loaded dataset and then reduces the
+ensemble to a representative subset:
+
+* **Technical validation always runs**, in both modes — a corrupt seed (missing
+  time/`m_z` columns, < 50 usable rows, NaN fraction > 5 %, non-monotone temperature,
+  < 300 K cooling span, T outside 200–2000 K, |m_z| > 1.155) never enters the analysis.
+* **Statistical outliers are flagged, kept, and stay eligible** — discarding them would
+  understate the ensemble spread the subset has to reproduce.
+* Selection is quantile sampling over the final-`m_z` distribution with a **fixed
+  `RNG_SEED`** (same folder + target ⇒ same seeds), accepted only if it reproduces the
+  full valid ensemble within: mean curve 0.05, SD 25 % relative, 300–310 K final-window
+  mean 0.10, up/reversed fractions 0.05. A target too small to pass is raised
+  automatically (`+max(5, n//2)`) until it passes or every valid seed is used.
+
+Sidebar: `cb_auto` "Auto Seed Selection" (default on) + `sp_nseed` "N seeds/rate"
+(default 50), a Valid / Selected / Rejected table per rate, and a label stating
+"Auto Seed Selection: N of M valid seeds used". The legend says
+`n=N selected of M valid seeds`, the figure annotation `VAMPIRE(median of N seeds)` —
+never a bare `n=` when a subset is in play. Plot-only display toggles
+`cb_traces_all`, `cb_traces_sel`, `cb_sem` (±2 SEM band), `cb_sd` (±SD band) are
+remembered in `QSettings` (`traces_all`, `traces_sel`, `sem_band`, `sd_band`).
+Gate: `tests/test_seed_qc.py`; the web equivalent is `web/tests/test_web_ui.py`.
+
 ### Layout
 
 ```

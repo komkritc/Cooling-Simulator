@@ -95,6 +95,9 @@ DEFAULTS: dict = dict(
     damp_use=0,                     # 0 = "λ = α (validated)", 1 = "λ = α/(1+α²)"
     sg_on=True, sg_win=15.0, sg_poly=3,        # smoothing on by default on the web
     grid=True, params_on=True, dark=False, invert_x=True, import_vampire=True,
+    traces_all=False, sem_band=True,          # SimpleWindow cb_traces_all / cb_sem defaults
+    seed_auto=True, seed_target=25,           # Auto Seed Selection on; the web target is
+                                              # 25, not the desktop's 50 (web runs are smaller)
     vpath="",
 )
 

@@ -41,6 +41,10 @@ WIDGET_DEFAULTS = {
     "wid_sg_on": ctx.DEFAULTS["sg_on"],
     "wid_sg_win": ctx.DEFAULTS["sg_win"],
     "wid_sg_poly": ctx.DEFAULTS["sg_poly"],
+    "wid_traces_all": ctx.DEFAULTS["traces_all"],
+    "wid_sem_band": ctx.DEFAULTS["sem_band"],
+    "wid_seed_auto": ctx.DEFAULTS["seed_auto"],
+    "wid_seed_target": ctx.DEFAULTS["seed_target"],
     "wid_import_v": ctx.DEFAULTS["import_vampire"],
     "wid_sample": "(none - upload a run)",
     "wid_up_mode": ".zip of the run folder",
@@ -66,6 +70,8 @@ def collect() -> dict:
                    ("sg_poly", "wid_sg_poly"), ("grid", "wid_grid"),
                    ("params_on", "wid_params_on"), ("dark", "wid_dark"),
                    ("invert_x", "wid_invert_x"), ("sg_on", "wid_sg_on"),
+                   ("traces_all", "wid_traces_all"), ("sem_band", "wid_sem_band"),
+                   ("seed_auto", "wid_seed_auto"), ("seed_target", "wid_seed_target"),
                    ("import_vampire", "wid_import_v")]:
         s[k] = g.get(key, ctx.DEFAULTS[k])
     s["damp_use"] = DAMP_ITEMS.index(g.get("wid_damp_use", DAMP_ITEMS[0]))
@@ -149,6 +155,14 @@ def render(pal: dict) -> dict:
                                 help="prints the ME / VAMPIRE parameters under the plot "
                                      "(also in the saved PNG)")
         invert_x = st.checkbox("Invert x-axis (high T on left)", key="wid_invert_x")
+        dc = st.columns(2)
+        dc[0].checkbox("Show all individual trajectories", key="wid_traces_all",
+                       help="thin grey line per VAMPIRE seed trajectory.  When Auto Seed "
+                            "Selection reduces the ensemble, the seeds actually used are "
+                            "drawn over them in the VAMPIRE colour")
+        dc[1].checkbox("\u00b12 SEM band", key="wid_sem_band",
+                       help="shaded band on the VAMPIRE mean line (turn off to see the "
+                            "spread of the trajectories)")
         sg_c = st.columns([1.6, 1, 1])
         sg_on = sg_c[0].checkbox("Smooth (SG)", key="wid_sg_on",
                                  help="Savitzky-Golay smoothing of the plotted curves only "
@@ -188,6 +202,18 @@ def render(pal: dict) -> dict:
                                help="fill diameter, temperatures, field, damping, atoms, "
                                     "cell, moment and γ from the loaded run (the ME rate "
                                     "stays as typed)")
+        sc = st.columns([2, 1], vertical_alignment="bottom")
+        sc[0].checkbox("Auto Seed Selection", key="wid_seed_auto",
+                       help="representative reduction of the VAMPIRE seed ensemble for the "
+                            "loaded run: technical validation always runs (a corrupt seed is "
+                            "never used), then up to the number on the right is chosen so the "
+                            "subset reproduces the full valid ensemble - mean, spread and "
+                            "final-magnetisation mix.  Fixed RNG, so the same folder always "
+                            "gives the same choice.  Off: every valid seed is used.")
+        sc[1].number_input("seeds/rate", 1, 2000, step=1, key="wid_seed_target",
+                           label_visibility="collapsed",
+                           help="target number of representative seeds; raised automatically "
+                                "if that few cannot reproduce the ensemble")
         vinfo = st.session_state.get("vampire_info", "")
         if vinfo:
             st.caption(vinfo)

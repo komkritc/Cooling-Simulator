@@ -121,7 +121,18 @@ def load_run(path: str) -> None:
         return
     try:
         s = AnalysisSession(resolve(path), snap_diameter=False)   # use the deck's real diameter (no 4.00 nm snap)
-        s.load_seeds()
+    except Exception as e:
+        st.session_state["session"] = None
+        notice(f"Could not load VAMPIRE run: {e}")
+        return
+
+    # Technical seed QC runs on load, exactly as on the desktop: a corrupt seed
+    # (unreadable, truncated, NaN-filled, wrong temperature span) is never loaded, so
+    # it can never reach the mean, the plot or the Record export.
+    rq = runner.qc_for(s, int(st.session_state.get("wid_seed_target",
+                                                  c.DEFAULTS["seed_target"])))
+    try:
+        s.load_seeds(only=sorted(rq.valid) if rq is not None else None)
     except Exception as e:
         st.session_state["session"] = None
         notice(f"Could not load VAMPIRE run: {e}")
@@ -142,10 +153,19 @@ def load_run(path: str) -> None:
     if s.cfg is not None:
         note = (f"\nGrain D = {s.rf_d:g} nm from the deck (LUT interpolated), "
                 f"N = {s.cfg.n_atoms} atoms") + note
+    qc_note = ""
+    if rq is not None:
+        qc_note = f"\nSeed QC: {len(rq.valid)} valid of {len(rq.seeds)}"
+        if rq.rejected:
+            qc_note += f", {len(rq.rejected)} corrupt excluded"
+        if rq.flagged:
+            qc_note += f", {len(rq.flagged)} outlier kept (not discarded)"
+        if rq.escalated:
+            qc_note += f", count raised above the target of {rq.target}"
     st.session_state["vampire_info"] = (
         f"{s.run_dir}\n{len(s.seeds)} seeds, {rate_txt}. "
         + ("ME rate set to match (you can change it freely)." if synced
-           else "ME rate is set separately above.") + note)
+           else "ME rate is set separately above.") + note + qc_note)
     notice("")
     if synced or not st.session_state.get("me_results"):
         run_me()

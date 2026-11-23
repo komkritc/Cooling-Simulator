@@ -175,3 +175,63 @@ def test_no_psw_tab(at):
                      + [c.value for c in at.caption] + [b.label for b in at.button])
     assert "Psw" not in texts and "m/ms Test" not in texts
     assert not at.get("table"), "the web app has no comparison table widget"
+
+
+# ------------------------------------------------- plot options / seed selection ----
+def _vamp_label(at) -> str:
+    """Legend text of the VAMPIRE mean line in the current figure."""
+    return next(l.get_label() for l in at.session_state["fig_obj"].axes[0].get_lines()
+                if l.get_label().startswith("VAMPIRE"))
+
+
+def test_new_control_defaults_match_the_desktop(at_noboot):
+    """cb_traces_all / cb_sem / cb_auto start as on the desktop; the web target is 25."""
+    ss = at_noboot.session_state
+    assert ss["wid_traces_all"] is False and ss["wid_sem_band"] is True
+    assert ss["wid_seed_auto"] is True and ss["wid_seed_target"] == 25
+
+
+def test_sem_band_checkbox_adds_and_removes_the_band(at):
+    assert len(at.session_state["fig_obj"].axes[0].collections) == 1   # the ±2 s.e.m. band
+    at.sidebar.checkbox(key="wid_sem_band").set_value(False).run()
+    assert len(at.session_state["fig_obj"].axes[0].collections) == 0
+    assert _vamp_label(at).startswith("VAMPIRE")                       # mean line stays
+
+
+def test_traces_checkbox_draws_one_line_per_seed(at):
+    ax = at.session_state["fig_obj"].axes[0]
+    before, n_seeds = len(ax.get_lines()), len(at.session_state["session"].seeds)
+    at.sidebar.checkbox(key="wid_traces_all").set_value(True).run()
+    assert len(at.session_state["fig_obj"].axes[0].get_lines()) == before + n_seeds
+
+
+def test_auto_seed_target_reduces_and_says_so(at):
+    """A smaller target re-runs the fixed-RNG selection; 10 of 25 is not faithful, so the
+    count escalates to 15 (same rule and numbers as the desktop)."""
+    from webapp import runner
+    at = _sample(at, "500 K/ns  (25 seeds)")
+    at.sidebar.number_input(key="wid_seed_target").set_value(10).run()
+    s = at.session_state["session"]
+    assert runner.vampire_stats(s).n == 25                             # every valid seed
+    assert runner.vampire_stats(s, {**ctx.DEFAULTS, "seed_target": 10}).n == 15
+    assert "n=15 selected of 25 valid seeds" in _vamp_label(at)
+    assert "15 of 25 seeds used" in " ".join(m.body for m in at.markdown
+                                             if isinstance(m.body, str))
+
+
+def test_auto_seed_selection_off_uses_every_valid_seed(at):
+    from webapp import runner
+    at = _sample(at, "500 K/ns  (25 seeds)")
+    at.sidebar.number_input(key="wid_seed_target").set_value(10).run()
+    at.sidebar.checkbox(key="wid_seed_auto").set_value(False).run()
+    s = at.session_state["session"]
+    assert runner.vampire_stats(s, {**ctx.DEFAULTS, "seed_auto": False}).n == 25
+    assert "n=25 seeds" in _vamp_label(at)
+
+
+def test_seed_qc_reported_on_load(at):
+    """The sidebar caption names the valid pool and the outliers, without a table."""
+    at = _sample(at, "200 K/ns  (25 seeds)")
+    info = at.session_state["vampire_info"]
+    assert "Seed QC: 25 valid of 25" in info and "1 outlier kept" in info
+    assert not at.get("table"), "the web app stays table-free"

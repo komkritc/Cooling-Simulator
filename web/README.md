@@ -11,7 +11,7 @@ by SHA-256). The solver uses adaptive Runge-Kutta steps. This is a phenomenologi
 two-temperature style model — it does not resolve electron or phonon populations
 explicitly.
 
-Last update: 2026-11-20.
+Last update: 2026-11-23 (seed QC + seed-count selection, §I).
 
 ## A. Quick start (works right now, locally)
 
@@ -35,8 +35,24 @@ run takes well under a second.
 
 ```bash
 cd .../app/web
-.venv/bin/python -m pytest tests -q      # 34 tests, ~20 s
+.venv/bin/python -m pytest tests -q      # 43 tests, ~35 s
 ```
+
+`test_web_ui.py` drives the real Streamlit script with `streamlit.testing`
+(AppTest): widget keys, run results, exports, and the seed-QC / selection labels.
+
+Five `test_web_parity.py` cases are currently red for data reasons, not code ones:
+
+* four come from `baselines/web_golden.json`, which still describes the **old** bundled
+  set — it lists `rate_100Kns` (now gone) and the pre-swap VAMPIRE medians, while
+  `sample_data/` was switched to the `rate_200/500Kns` decks in `a3b64e2`. Re-capture the
+  contract with `baselines/capture_from_desktop.py`, or decide the bundled-run set first.
+* one comes from `test_sample_data_is_aggregated_only`: the new sample folders ship raw
+  VAMPIRE files (`run_stdout.txt`, `log`, `input`, `grain.txt`), which must not go into a
+  public sample (§F option 1 ships aggregated seed text only).
+
+Both fail identically with and without the seed-selection work (verified on a clean
+`HEAD` worktree).
 
 | file | checks |
 |---|---|
@@ -96,6 +112,8 @@ VAMPIRE comparison card, the validation card and the export buttons.
 | folder input + Load/Clear | `st.selectbox` of bundled runs + Load / Clear buttons | no folder picker in a browser |
 | ZIP / files upload | `st.file_uploader` (a .zip of the run folder, or the `*_input.json` / `.mat` / `output_seedN.dat` files) | temp dir per session, cleaned at exit |
 | import settings buttons | two checkboxes (auto-load / auto-clear) | same effect |
+| `cb_traces_all` / `cb_traces_sel` / `cb_sem` ±2 SEM band / `cb_sd` ±SD band (all four remembered in `QSettings`) | `st.checkbox` "Show all individual trajectories" and "±2 SEM band" | plot-only. Web: every valid seed grey (theme dim colour, lw 0.6, α 0.18, under the mean lines) and, when the mean uses a subset, that subset overdrawn in the VAMPIRE colour (α 0.32). No web equivalent of the separate selected-traces toggle or the ±SD band |
+| `cb_auto` "Auto Seed Selection" + `sp_nseed` "N seeds/rate" + seed table (Valid / Selected / Rejected per rate) | `st.checkbox` + `st.number_input` (1–2000) + a caption | see §I — same `studio/core/seed_qc` scan and selection. The web app loads one rate folder at a time, so the per-rate table collapses into the caption |
 | Run ME / Run Queue / Batch Scan / Reference Test | **Run ME** only | queue and scans are not in v1 |
 | Export buttons (5) | PNG, arrays CSV, standalone .py, audit record ZIP | `st.download_button` |
 | status bar + progress bar | `st.toast` + `st.status` | no per-step progress bar |
@@ -150,6 +168,55 @@ web run that drifts fails the test suite.
 
 `sample_data/README.md` explains what ships per seed and how to add more runs.
 
+## I. Seed QC and seed-count selection (sidebar ▸ "Auto Seed Selection")
+
+Every loaded run folder is scanned with `studio/core/seed_qc.py` — the module the
+desktop dataset scan already uses, imported as-is (no web copy of the logic). The
+sidebar caption reports the QC on load:
+
+```
+Seed QC: 25 valid of 25, 1 outlier kept (not discarded)
+```
+
+A file leaves the pool only if it is technically unusable (missing time/m_z columns,
+fewer than 50 usable rows after NaN removal, NaN fraction > 5 %, non-monotone
+temperature, < 300 K of cooling span, T outside 200–2000 K, |m_z| > 1.155).
+Statistical outliers are **flagged, never discarded** — dropping them would
+understate the ensemble spread the selection has to reproduce, and flagged seeds stay
+eligible for selection.
+
+`seeds/rate` is a floor on faithfulness, not a straight cap (default 25; the desktop
+spinbox defaults to 50 because it scans whole multi-rate datasets). The app
+quantile-samples the requested count over the final-`m_z` distribution (deterministic:
+fixed `RNG_SEED = 20260425`, ties broken by deviation then seed id — same folder and
+target always give the same seeds), then checks that subset against the full valid
+ensemble on the 500-point common temperature axis:
+
+| check | tolerance |
+|---|---|
+| max abs error of the mean curve | 0.05 |
+| max relative error of the SD | 25 % |
+| error of the 300–310 K final-window mean `m_z` | 0.10 |
+| change of the up / reversed fractions | 0.05 |
+
+A subset that fails gets its count raised by `max(5, n//2)` and re-checked, up to the
+full valid set — the target is a floor on faithfulness, never a ceiling on quality; the
+caption then adds "count raised above the target of N". A target at or above the number
+of valid seeds, or "Auto Seed Selection" switched off, means no reduction. The scan and
+its curves are cached per folder contents, so changing the target re-runs only the
+selection, never the disk read.
+
+What the chosen subset drives: the VAMPIRE mean, the ±2 s.e.m. band, the coloured
+traces, the ratio card, RMSE / Δ, and the up / down / reversed counts. Every one of
+those says so out loud — legend `n=22 selected of 25 valid seeds`, ratio card
+`22 of 25 valid seeds`, VAMPIRE card `22 of 25 seeds used`, figure annotation
+`VAMPIRE(median of 22 seeds)`. The ME curve, the validation rules and the exports are
+untouched (arrays CSV stays raw and complete).
+
+The desktop app does the same QC and selection for every rate in a dataset at once, with
+a Valid / Selected / Rejected table (§ `simple_window`); here the same
+`select_rate()` runs on the single loaded rate folder.
+
 ## F. Deploying on share.streamlit.io (not done — one decision needed)
 
 Streamlit Community Cloud deploys **from a public GitHub repository**. You asked
@@ -182,5 +249,8 @@ Until you choose, everything stays local and this repo keeps no remote.
    was removed is parked outside the tree at `../_attic_web_psw/psw_tab.py.removed`
    (git-ignored) in case it is ever wanted again
 7. ✅ hardening: pin check, D clamp to LUT range, upload size cap, temp cleanup
-8. ✅ docs + 34 tests (3 bundled runs, 3 figure variants)
+8. ✅ docs + 43 tests (3 bundled runs, 3 figure variants)
 9. ⬜ deployment (blocked on the decision in F)
+10. ✅ seed QC + representative seed selection ("Auto Seed Selection"), per-seed
+    trajectories and ±2 s.e.m. band toggles — web §I, desktop `README.md`
+    (both apps, `studio/core/seed_qc.py` shared, fixed `RNG_SEED`)
